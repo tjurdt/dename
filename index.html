@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文件去識別化工具 · 姓名 / 身分證 / 病歷號</title>
+<style>
+  :root{
+    --bg:#eaeef1; --panel:#fff; --ink:#1b2430; --muted:#5d6b7a;
+    --line:#dde3ea; --line-strong:#c6d0da;
+    --accent:#0e6b74; --accent-ink:#0a545b; --accent-soft:#e2f1f2;
+    --safe:#137a4f; --safe-soft:#e4f4ec; --warn:#9a6b00; --warn-soft:#fbf1dc;
+    --radius:14px; --shadow:0 1px 2px rgba(20,30,45,.04),0 8px 28px rgba(20,30,45,.06);
+    --mono:"SFMono-Regular",ui-monospace,"Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 80px}
+  header.app{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .brand{display:flex;gap:14px;align-items:center}
+  .glyph{width:46px;height:46px;border-radius:12px;flex:0 0 auto;background:linear-gradient(150deg,var(--accent),#0a565e);display:grid;place-items:center;box-shadow:var(--shadow)}
+  .glyph svg{width:24px;height:24px}
+  h1{font-size:20px;margin:0;letter-spacing:-.01em;font-weight:700}
+  .brand p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+  .localbadge{display:inline-flex;align-items:center;gap:8px;background:var(--safe-soft);color:var(--safe);border:1px solid #bfe6d2;border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;white-space:nowrap}
+  .localbadge svg{width:15px;height:15px}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .panel .hd{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .panel .hd h2{margin:0;font-size:14px;font-weight:700}
+  .panel .hd .sub{font-size:12px;color:var(--muted)}
+  .panel .bd{padding:16px 18px}
+  .drop{border:1.5px dashed var(--line-strong);border-radius:12px;padding:26px 16px;text-align:center;cursor:pointer;transition:.15s;background:#fbfcfd}
+  .drop:hover,.drop.hot{border-color:var(--accent);background:var(--accent-soft)}
+  .drop .big{font-size:14px;font-weight:600;margin:8px 0 3px}
+  .drop .small{font-size:12px;color:var(--muted)}
+  .drop svg{width:30px;height:30px;color:var(--accent)}
+  .filelist{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .filelist li{display:flex;align-items:center;gap:10px;font-size:13px;background:#f6f8fa;border:1px solid var(--line);border-radius:9px;padding:8px 11px}
+  .filelist .fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .filelist .tag{font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px;background:#e2eef0;color:var(--accent-ink)}
+  .filelist .st{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .filelist .rm{border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;border-radius:6px}
+  .filelist .rm:hover{background:#e7ebef;color:var(--ink)}
+  .rulegroup+.rulegroup{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .rulegroup .gt{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:8px}
+  .rule{display:flex;align-items:flex-start;gap:10px;padding:7px 0}
+  .rule label{font-size:13px;cursor:pointer;user-select:none;flex:1}
+  .rule .ex{display:block;font-size:11.5px;color:var(--muted);font-family:var(--mono);margin-top:1px}
+  .rule .swatch{width:11px;height:11px;border-radius:3px;flex:0 0 auto;margin-top:5px}
+  input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);margin-top:2px;cursor:pointer;flex:0 0 auto}
+  .subopt{margin:2px 0 0 27px;padding-left:11px;border-left:2px solid var(--line)}
+  .sens{display:flex;gap:6px;margin-top:8px}
+  .sens button{flex:1;border:1px solid var(--line-strong);background:#fff;border-radius:8px;padding:7px 4px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--muted)}
+  .sens button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+  .mininote{font-size:11px;color:var(--muted);margin:6px 0 0}
+  textarea{width:100%;border:1px solid var(--line-strong);border-radius:9px;padding:9px 11px;font-family:var(--mono);font-size:12.5px;resize:vertical;min-height:56px;color:var(--ink)}
+  textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .modes{display:flex;gap:8px;margin-top:4px}
+  .modes .opt{flex:1;border:1px solid var(--line-strong);border-radius:9px;padding:9px 10px;cursor:pointer;transition:.12s}
+  .modes .opt.on{border-color:var(--accent);background:var(--accent-soft)}
+  .modes .opt .t{font-size:12.5px;font-weight:600}
+  .modes .opt .d{font-size:11px;color:var(--muted);margin-top:1px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;padding:11px 16px;font-family:inherit;transition:.12s}
+  .btn-primary{background:var(--accent);color:#fff;width:100%}
+  .btn-primary:hover{background:var(--accent-ink)}
+  .btn-primary:disabled{background:#aebac4;cursor:not-allowed}
+  .btn-ghost{background:#eef2f5;color:var(--ink);border:1px solid var(--line)}
+  .btn-ghost:hover{background:#e3e9ee}
+  .empty{padding:60px 24px;text-align:center;color:var(--muted)}
+  .empty svg{width:44px;height:44px;color:var(--line-strong);margin-bottom:12px}
+  .empty .big{font-size:15px;color:var(--ink);font-weight:600;margin-bottom:4px}
+  .tally{display:flex;flex-wrap:wrap;gap:8px;padding:14px 18px;border-bottom:1px solid var(--line);background:#fbfcfd}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+  .chip .dot{width:9px;height:9px;border-radius:50%}
+  .chip .n{font-variant-numeric:tabular-nums;color:var(--muted)}
+  .chip.total{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip.total .n{color:#c6d0da}
+  .toolbar{display:flex;gap:9px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .toolbar .grow{flex:1}
+  .seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:9px;overflow:hidden}
+  .seg button{border:none;background:#fff;padding:7px 13px;font-size:12.5px;cursor:pointer;font-family:inherit;color:var(--muted)}
+  .seg button.on{background:var(--accent);color:#fff;font-weight:600}
+  .filetab{display:flex;gap:6px;padding:10px 18px 0;flex-wrap:wrap}
+  .filetab button{border:1px solid var(--line);background:#f6f8fa;border-bottom:none;border-radius:8px 8px 0 0;padding:7px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .filetab button.on{background:#fff;color:var(--ink);font-weight:600}
+  pre.doc{margin:0;padding:18px;font-family:var(--mono);font-size:12.5px;line-height:1.9;white-space:pre-wrap;word-break:break-word;max-height:560px;overflow:auto;color:#2a3644}
+  mark{border-radius:4px;padding:0 3px;font-style:normal;font-weight:600;color:#1b2430;box-decoration-break:clone;-webkit-box-decoration-break:clone;cursor:default}
+  .redtoken{background:#f0f2f4;color:#8a97a5;border-radius:4px;padding:0 4px;font-weight:600}
+  .trunc{padding:10px 18px;font-size:12px;color:var(--warn);background:var(--warn-soft);border-top:1px solid #f0e2c2}
+  .foot{margin-top:26px;font-size:12px;color:var(--muted);line-height:1.7}
+  .foot .note{background:var(--warn-soft);border:1px solid #f0e2c2;border-radius:10px;padding:12px 14px;color:#7a5a10}
+  .foot code{background:#e7ecf0;border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:11.5px}
+  .spinner{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="brand">
+      <div class="glyph" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div>
+        <h1>文件去識別化工具</h1>
+        <p>PDF / TXT 上傳 → 遮蔽姓名・身分證・病歷號 → 輸出 TXT</p>
+      </div>
+    </div>
+    <span class="localbadge" title="所有處理都在您的瀏覽器內完成">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      全程本地處理 · 檔案不會上傳
+    </span>
+  </header>
+
+  <div class="grid">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <section class="panel">
+        <div class="hd"><h2>1 · 選擇檔案</h2><span class="sub">PDF 或 TXT</span></div>
+        <div class="bd">
+          <div class="drop" id="drop">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            <div class="big">拖曳 PDF 或 TXT 到這裡</div>
+            <div class="small">或點擊選擇檔案 · 支援多檔 · PDF 需有文字層</div>
+          </div>
+          <input type="file" id="fileInput" accept="application/pdf,.pdf,text/plain,.txt" multiple class="hidden">
+          <ul class="filelist" id="fileList"></ul>
+          <div style="margin-top:14px">
+            <div class="mininote" style="margin-bottom:6px">或直接貼上文字：</div>
+            <textarea id="pasteBox" placeholder="把要去識別化的文字貼在這裡…（可與上傳檔案並用）" style="min-height:96px"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="hd"><h2>2 · 遮蔽規則</h2></div>
+        <div class="bd">
+          <div class="rulegroup">
+            <div class="rule">
+              <input type="checkbox" id="rule_name" checked>
+              <span class="swatch" style="background:#d6336c"></span>
+              <label for="rule_name">中文姓名<span class="ex">多訊號判定：姓氏＋名字用字＋上下文</span></label>
+            </div>
+            <div class="subopt">
+              <div class="mininote">靈敏度（越寬鬆抓越多、誤判也越多）</div>
+              <div class="sens" id="sens">
+                <button data-th="3">寬鬆</button>
+                <button data-th="4" class="on">標準</button>
+                <button data-th="6">嚴格</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="rulegroup">
+            <div class="rule">
+              <input type="checkbox" id="rule_twid" checked>
+              <span class="swatch" style="background:#c92a2a"></span>
+              <label for="rule_twid">身分證字號<span class="ex">A123456789</span></label>
+            </div>
+            <div class="subopt">
+              <div class="rule" style="padding:4px 0">
+                <input type="checkbox" id="optChecksum" checked>
+                <label for="optChecksum" style="font-size:12.5px">僅遮蔽通過檢查碼者<span class="ex">關閉＝所有符合格式者都遮（更保守）</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="rulegroup">
+            <div class="rule">
+              <input type="checkbox" id="rule_chart" checked>
+              <span class="swatch" style="background:#0e8a8a"></span>
+              <label for="rule_chart">病歷號（需關鍵字）<span class="ex">病歷號 / 住院號 / 門診號：1234567</span></label>
+            </div>
+            <div class="rule">
+              <input type="checkbox" id="rule_date" checked>
+              <span class="swatch" style="background:#546274"></span>
+              <label for="rule_date">日期（含出生日期）<span class="ex">20260707・1957-01-16・110年5月3日</span></label>
+            </div>
+            <div class="rule">
+              <input type="checkbox" id="rule_longnum" checked>
+              <span class="swatch" style="background:#0a7cbf"></span>
+              <label for="rule_longnum">無關鍵字數字串<span class="ex">結構化清單裡沒有標籤的病歷號等</span></label>
+            </div>
+            <div class="subopt">
+              <div class="mininote">數字串最少位數（越小抓越多、誤判越多）</div>
+              <div class="sens" id="minDigits">
+                <button data-n="6">6 碼</button>
+                <button data-n="7" class="on">7 碼</button>
+                <button data-n="8">8 碼</button>
+              </div>
+            </div>
+            <div class="rule" style="margin-top:6px">
+              <input type="checkbox" id="optKeepRecent" checked>
+              <label for="optKeepRecent" style="font-size:12.5px">保留一年內的日期<span class="ex">可能是入院日或嬰兒生日（回推月數用）</span></label>
+            </div>
+          </div>
+
+          <div class="rulegroup">
+            <div class="gt">複核輔助</div>
+            <div class="rule">
+              <input type="checkbox" id="optMarkDoubt" checked>
+              <label for="optMarkDoubt" style="font-size:12.5px">標註有疑義的項目<span class="ex">低信心判定（如僅單一名字用字、無關鍵字數字）標為 [姓名?]，並在「標示原文」以虛線標出</span></label>
+            </div>
+          </div>
+
+          <div class="rulegroup">
+            <div class="gt">自訂詞彙（補漏用）</div>
+            <p class="mininote" style="margin:0 0 8px">姓名判定不可能百分百，把確定要遮但可能漏掉的字串放這裡，一行一個或逗號分隔。</p>
+            <textarea id="customTerms" placeholder="陳大文&#10;林○○&#10;某某診所"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="hd"><h2>3 · 取代方式</h2></div>
+        <div class="bd">
+          <div class="modes">
+            <div class="opt on" data-mode="label"><div class="t">類別標籤</div><div class="d">全換成 [姓名]</div></div>
+            <div class="opt" data-mode="number"><div class="t">編號代號</div><div class="d">同值一致 [姓名_01]</div></div>
+          </div>
+          <p class="mininote">編號模式讓同一個值對到固定代號，保留關聯性，適合後續分析。</p>
+        </div>
+      </section>
+
+      <button class="btn btn-primary" id="runBtn" disabled><span id="runLabel">請先選擇檔案</span></button>
+    </div>
+
+    <section class="panel" id="resultPanel">
+      <div class="empty" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg>
+        <div class="big">尚未產生結果</div>
+        <div>選擇檔案並設定規則後，點「開始去識別化」。</div>
+      </div>
+      <div id="resultBody" class="hidden">
+        <div class="tally" id="tally"></div>
+        <div class="filetab" id="fileTabs"></div>
+        <div class="toolbar">
+          <div class="seg">
+            <button id="viewRedacted" class="on">去識別化後</button>
+            <button id="viewHighlight">標示原文</button>
+          </div>
+          <div class="grow"></div>
+          <button class="btn btn-ghost" id="selAll">全選</button>
+          <button class="btn btn-ghost" id="copyBtn">複製結果</button>
+          <button class="btn btn-ghost" id="dlOne">下載此檔 .txt</button>
+          <button class="btn btn-ghost" id="dlAll">合併下載</button>
+        </div>
+        <div>
+          <pre class="doc" id="docView"></pre>
+          <div class="trunc hidden" id="truncNote"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot">
+    <div class="note">
+      <strong>使用限制</strong>：中文姓名以規則＋字典判定，<strong>必有漏抓與誤判</strong>（冷僻名字用字、複姓、外國譯名易漏；某些姓氏＋常用字可能誤遮）。身分證、病歷號亦非萬無一失。用於實際臨床／研究資料時，本工具僅能<strong>降低風險</strong>，請務必以「標示原文」檢視人工複核後再採用輸出結果。
+    </div>
+    <p style="margin:12px 0 0">全部在瀏覽器端執行，無後端、無網路傳輸。PDF 文字擷取用 <code>pdf.js</code>；掃描影像 PDF（無文字層）無法擷取。</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  const PDFJS = window['pdfjsLib'];
+  PDFJS.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  /* ---------- Name detection data ---------- */
+  const COMMON_SUR = new Set("陳林黃張李王吳劉蔡楊許鄭謝洪郭邱曾廖賴徐周葉蘇莊呂江何蕭羅高潘簡朱鍾游詹胡施沈余趙盧梁顏柯孫魏翁戴范方宋鄧杜傅侯曹薛丁卓阮馬董溫唐藍石陸金童紀歐巫韓白涂尤龔嚴文黎孔".split(""));
+  const SURNAME = new Set(("趙錢孫李周吳鄭王馮陳褚衛蔣沈韓楊朱秦尤許何呂施張孔曹嚴華金魏陶姜戚謝鄒喻柏竇章雲蘇潘葛奚范彭郎魯韋昌馬苗鳳花俞任袁柳酆鮑史唐費廉岑薛雷賀倪湯滕殷羅畢郝安樂于時傅皮卞齊康伍余元卜顧孟平黃穆蕭尹姚邵湛汪祁毛狄米貝明臧伏成戴談宋茅龐熊紀舒屈項祝董梁杜阮藍閔席季麻強賈婁江童顏郭梅盛林刁鍾徐邱駱高夏蔡田樊胡凌霍虞萬柯管盧莫房裘繆解應宗丁宣鄧郁單杭洪包左石崔吉鈕龔程嵇邢裴陸榮翁荀羊惠甄封芮儲靳邴松井段富焦巴弓侯山谷車宮寧仇甘厲戎祖武符劉景詹束龍葉幸司郜黎薄印白懷蒲邰鄂賴屠池喬陰胥蒼聞莘黨翟譚勞姬申扶堵冉宰雍桑桂濮牛壽邊扈燕冀浦尚溫莊晏柴瞿閻慕連茹宦艾容向古易慎戈廖庾暨居衡步都耿滿弘匡國寇廣祿闕東歐殳沃利蔚越隆鞏聶晁敖冷辛那簡饒空曾毋沙養鞠豐巢關蒯查荊游竺權蓋桓涂").split(""));
+  const COMPOUND = new Set(["歐陽","司馬","上官","諸葛","東方","夏侯","皇甫","尉遲","公孫","慕容","令狐","宇文","長孫","司徒","司空","端木","呼延","東郭","西門","南宮","鍾離","閭丘","司寇","百里","澹臺"]);
+  const GIVEN = new Set(("家明華志偉建文玉秀英惠美麗芳淑雅婷婉玲芬珍君佳宜欣庭涵昕宇軒翔傑豪誠賢銘宏弘峰峯全安定泰光亮輝煌俊彥哲睿智慧敏靜怡潔貞芸筠筑妍嫣蓉蓮荷菁萱蕙蘭若芊芃苡茜荃莉菲萍葳蓁薇曉晨晴昱昭昀春秋冬雪霜霞虹星辰恩慈愛仁義禮信忠孝廉勤儉謙和康健樂喜福祿壽貴富榮昌隆盛興旺發順利吉祥瑞麟龍鳳鵬鴻鶴燕鶯駿麒珊琳琪瑤瑩璇璐瑋瑄珮玥琛瑀璟瓊碧翠青藍紫紅丹皓皎素純清淨澄淵濤瀚泓洋波沛沂沁汪治洲浩淞淮淇添湘漢潤澤濟火炎煒熙熹燁燦岳峻崇嵐磊磐鑫鈺銓鋒鋼鎧鎮鐘楨榕楓樺松柏桐梧桂樟樑棟權亨庭于萱婕妤芯昀祐佑宸睿翊翎翰穎馨蕓寧慶維綺綾緣澐潼霈霏靈鵑駒騰麗黛黎鴻麒麟娜妮婭玫蕾芯茵苓菱棻嵐妃嬅妤婕娟娥媛嬌姍姵妘姿倩儀億凱勛勳卉卿吟呈哲堯培士媗嫻宛容尉屏峮崴嵩廷弈彤彬得心怡恆愷憲懿承政敦斌昇昶晉暐曜杰枝柔栩桓梓棠楷樂欽毅浤淳為玨琇琚琦琴瑛瑀璞皆盈眉睿祺禎穆綸緯繁翌翔耀肇臻致舜芃苹茗荏莘菀萬葦蓉蔚蕎薰藝蘋衡裕豫貫赫軒逸邦郁鈞銳鋐鏵鐿闓陶雋雯霖靖韶頌顥飛駿騏鵬麒").split(""));
+  const FUNC = new Set("的是在有和與了也就都而及或但因所為之於其此該這那們你我他她它又再已未不沒很太最更並且若則即乃呢嗎吧啊呀喔得地個把被將對從向往到由關至能會可要想說看見來去做用需應讓使每各某些多少幾何如任本次上下前後左右內外中間時".split(""));
+  const NONNAME = new Set("病症科院部室房床藥針血尿便痛熱燒腫炎癌瘤手術診療檢查治護士生員者人民國歲天日月年時分秒號樓段巷弄路街區里鄉鎮縣市省".split(""));
+  const WHITELIST = new Set(["高血壓","高血糖","高燒","高度","高危","高階","高峰","高效","高溫","高齡","高頻","高中","高興","高於","白血球","白蛋白","白內障","白天","白色","白斑","白帶","白袍","白喉","黃疸","黃斑","黃色","黃體","黃金","方面","方向","方式","方法","方案","方便","方形","方能","方可","成人","成功","成分","成長","成熟","成年","成效","成因","成像","成為","成果","康復","健康","常見","常規","平常","正常","異常","通常","經常","日常","非常","常常","樂觀","樂於","平均","平穩","平時","平衡","平面","平臺","平滑","平板","平和","平靜","毛髮","毛囊","毛細","毛巾","石膏","石化","結石","膽石","腎石","石灰","費用","免費","收費","自費","顏色","顏面","包括","包含","包紮","包覆","包膜","麵包","文獻","文件","文字","論文","文化","文章","文明","國家","國際","國內","國小","國中","國立","利用","利尿","有利","銳利","便利","順利","權利","沙門","泥沙","董事","於是","由於","關於","對於","至於","終於","基於","鑑於","處於","位於","時間","時候","時期","時常","小時","隨時","應該","反應","適應","供應","效應","答應","應用","相應","華人","中華","華麗","水腫","水分","水泡","積水","脫水","水平","水準","洪水","雲端","車禍","車輛","汽車","機車","停車","車程","山區","山谷","火山","谷底","何時","何處","任何","幾何","如何","為何","金屬","金額","資金","現金","黃金","金黃","獎金","租金","佣金","明顯","明確","說明","證明","光明","透明","聲明","發明","表明","明白","明天","明年","周邊","旁邊","兩邊","邊界","邊緣","特別","分別","個別","區別","差別","性別","級別","類別","識別","別的","充分","充血","補充","充足","擴充","充滿","空氣","空間","空腹","太空","真空","空腔","空白","冷卻","冷凍","寒冷","冰冷","冷氣","冷汗","相關","相同","相對","相互","相似","互相","真相","照相","相片","相當","相比","公司","公斤","公分","公克","公升","辦公","公共","公園","公里","公開","公式","老公","公務","溫度","氣溫","體溫","保溫","低溫","高溫","溫和","溫水","唐氏","歐美","歐洲","藍色","藍圖","元素","元件","單元","元旦","公元","施行","實施","措施","設施","江河","呂宋","武器","武力","謝謝","感謝","答謝","許多","許可","也許","少許","准許","賴以","曾經","未曾","不曾","顧慮","照顧","顧客","回顧","兼顧","孟加","嚴重","嚴格","尊嚴","嚴謹","孔洞","毛孔","鼻孔","面孔","黎明","潘朵","史丹","歷史","史上"]);
+  const ANCHOR_RE = /(姓名|病患|病人|患者|家屬|主訴|訴稱|表示|自述|陳述|受檢者|受試者|個案|案主|聯絡人|通報人|報告人|醫師|護理師|主治|經辦|承辦)/;
+  const TITLE_RE = /^(先生|小姐|女士|太太|醫師|醫生|護理師|老師|主任|教授|同學|經理|主管|總經理|董事長|君)/;
+  const FIELD_RE = /(姓名|病患姓名|病人姓名|患者姓名|受檢者)[\s:：]*([\u4e00-\u9fa5]{2,4})/g;
+
+  function detectNames(text, threshold){
+    const res=[]; const isHan=ch=>ch&&/[\u4e00-\u9fa5]/.test(ch); const N=text.length; let i=0;
+    while(i<N){
+      const c=text[i]; let sname=null, slen=0;
+      const two=text.substr(i,2);
+      if(COMPOUND.has(two)){ sname=two; slen=2; } else if(SURNAME.has(c)){ sname=c; slen=1; }
+      if(sname){
+        const before=text.substring(Math.max(0,i-6),i);
+        const g1=text[i+slen], g2=text[i+slen+1];
+        const cands=[];
+        if(isHan(g1)&&isHan(g2)) cands.push(slen+2);
+        if(isHan(g1)) cands.push(slen+1);
+        let best=null;
+        for(const L of cands){
+          const span=text.substr(i,L); const givens=span.slice(slen).split("");
+          if(WHITELIST.has(span)) continue;
+          if(WHITELIST.has(text.substr(i,L+1))) continue;
+          if(givens.some(ch=>FUNC.has(ch)||NONNAME.has(ch))) continue;
+          const isCompound=slen===2;
+          let score=isCompound?4:(COMMON_SUR.has(sname)?2:1), givenHit=0;
+          for(const ch of givens){ if(GIVEN.has(ch)){ score+=2; givenHit++; } }
+          const after=text.substr(i+L,2);
+          const hasTitle=TITLE_RE.test(after), hasAnchor=ANCHOR_RE.test(before);
+          if(hasAnchor) score+=3; if(hasTitle) score+=3;
+          if(givenHit===0 && !hasAnchor && !hasTitle && !isCompound) continue;
+          if(score>=threshold){
+            // confidence: strong if field/anchor/title/compound/two given-char hits; else low (疑義)
+            const conf=(hasAnchor||hasTitle||isCompound||givenHit>=2)?'high':'low';
+            best={start:i,end:i+L,value:span,conf}; break;
+          }
+        }
+        if(!best){
+          const after=text.substr(i+slen,2);
+          if(TITLE_RE.test(after) && (COMMON_SUR.has(sname)||ANCHOR_RE.test(before)))
+            best={start:i,end:i+slen,value:sname,conf:'high'};
+        }
+        if(best){ res.push(best); i=best.end; continue; }
+      }
+      i++;
+    }
+    let m; while((m=FIELD_RE.exec(text))){
+      const gv=m[2]; const st=m.index+m[0].lastIndexOf(gv);
+      if(!res.some(r=>r.start<st+gv.length && st<r.end)) res.push({start:st,end:st+gv.length,value:gv,conf:'high'});
+    }
+    return res;
+  }
+
+  /* ---------- ID + chart ---------- */
+  function twIdChecksum(id){
+    id=id.toUpperCase(); if(!/^[A-Z][12]\d{8}$/.test(id)) return false;
+    const map={A:10,B:11,C:12,D:13,E:14,F:15,G:16,H:17,I:34,J:18,K:19,L:20,M:21,N:22,O:35,P:23,Q:24,R:25,S:26,T:27,U:28,V:29,W:32,X:30,Y:31,Z:33};
+    const n=map[id[0]]; const d=[Math.floor(n/10),n%10,...id.slice(1).split("").map(Number)]; const w=[1,9,8,7,6,5,4,3,2,1,1];
+    let s=0; for(let i=0;i<11;i++) s+=d[i]*w[i]; return s%10===0;
+  }
+  function detectTwid(text,opts){
+    const out=[]; const re=/[A-Za-z][12]\d{8}/g; let m;
+    while((m=re.exec(text))){ const v=m[0]; if(opts.checksum&&!twIdChecksum(v)) continue; out.push({start:m.index,end:m.index+v.length,value:v}); }
+    return out;
+  }
+  function detectChart(text){
+    const out=[]; const re=/(病歷號碼|病歷號|門診號|住院號|病人代號|chart\s?no\.?|HN)[\s:：#＃]*([A-Za-z]?\d{4,10})/gi; let m;
+    while((m=re.exec(text))){ const idx=m.index+m[0].lastIndexOf(m[2]); out.push({start:idx,end:idx+m[2].length,value:m[2]}); }
+    return out;
+  }
+  function detectDate(text, keepRecent){
+    const out=[]; let m;
+    const cutoff=new Date(); cutoff.setFullYear(cutoff.getFullYear()-1); // 一年前
+    const recent=(y,mo,d)=>{ // true 表示「距今一年內」→ 保留、不遮
+      const dt=new Date(y,mo-1,d);
+      return !isNaN(dt) && dt>=cutoff;
+    };
+    const push=(idx,val,y,mo,d)=>{ if(keepRecent && recent(y,mo,d)) return; out.push({start:idx,end:idx+val.length,value:val}); };
+    let r;
+    const re1=/(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])/g;      // YYYYMMDD
+    while((r=re1.exec(text))){ const v=r[0]; push(r.index,v,+v.slice(0,4),+v.slice(4,6),+v.slice(6,8)); }
+    const re2=/((?:19|20)\d{2})([\/\-.])(\d{1,2})\2(\d{1,2})/g;               // Y/M/D
+    while((r=re2.exec(text))){ const mo=+r[3],d=+r[4]; if(mo>=1&&mo<=12&&d>=1&&d<=31) push(r.index,r[0],+r[1],mo,d); }
+    const re3=/(?:民國|西元)?\s?(\d{2,4})\s?年\s?(\d{1,2})\s?月\s?(\d{1,2})\s?日/g; // 中文年月日
+    while((r=re3.exec(text))){ let y=+r[1]; if(y<200) y+=1911; push(r.index,r[0],y,+r[2],+r[3]); }
+    return out;
+  }
+  function detectLongNum(text,min,excludeDates){
+    const out=[]; const re=new RegExp(`\\d{${min},}`,'g'); let m;
+    const isDate=s=>/^(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])$/.test(s);
+    while((m=re.exec(text))){
+      if(excludeDates && isDate(m[0])) continue; // 讓日期規則處理，不重複當數字ID
+      out.push({start:m.index,end:m.index+m[0].length,value:m[0],conf:'low'});
+    }
+    return out;
+  }
+
+  const CATS = {
+    name:{label:'姓名', color:'#d6336c'},
+    twid:{label:'身分證', color:'#c92a2a'},
+    chart:{label:'病歷號', color:'#0e8a8a'},
+    date:{label:'日期', color:'#546274'},
+    longnum:{label:'數字ID', color:'#0a7cbf'},
+    custom:{label:'自訂', color:'#7d3ac1'},
+  };
+
+  /* ---------- State ---------- */
+  const state={files:[],results:[],activeIdx:0,view:'redacted',mode:'label',threshold:4,minDigits:7};
+
+  /* ---------- File handling ---------- */
+  const drop=document.getElementById('drop'), fileInput=document.getElementById('fileInput');
+  drop.onclick=()=>fileInput.click();
+  ['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('hot');}));
+  ['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('hot');}));
+  drop.addEventListener('drop',ev=>addFiles(ev.dataTransfer.files));
+  fileInput.addEventListener('change',ev=>addFiles(ev.target.files));
+  function fileType(f){ return (f.type==='application/pdf'||/\.pdf$/i.test(f.name))?'pdf':((f.type==='text/plain'||/\.txt$/i.test(f.name))?'txt':null); }
+  function addFiles(list){
+    for(const f of list){ const t=fileType(f); if(t && !state.files.some(x=>x.name===f.name&&x.size===f.size)) state.files.push(f); }
+    renderFileList(); updateRunBtn();
+  }
+  function renderFileList(){
+    const ul=document.getElementById('fileList');
+    ul.innerHTML=state.files.map((f,i)=>`<li><span class="tag">${fileType(f).toUpperCase()}</span><span class="fn" title="${escapeAttr(f.name)}">${escapeHtml(f.name)}</span><span class="st">${(f.size/1024).toFixed(0)} KB</span><button class="rm" data-i="${i}" title="移除">×</button></li>`).join('');
+    ul.querySelectorAll('.rm').forEach(b=>b.onclick=()=>{state.files.splice(+b.dataset.i,1);renderFileList();updateRunBtn();});
+  }
+  function pasteText(){ return document.getElementById('pasteBox').value; }
+  function updateRunBtn(){
+    const btn=document.getElementById('runBtn'),lbl=document.getElementById('runLabel');
+    const nf=state.files.length, hasPaste=pasteText().trim().length>0;
+    const total=nf+(hasPaste?1:0);
+    if(total){btn.disabled=false;lbl.textContent=`開始去識別化（${total} 個項目）`;}
+    else{btn.disabled=true;lbl.textContent='請先選擇檔案或貼上文字';}
+  }
+  document.getElementById('pasteBox').addEventListener('input',updateRunBtn);
+
+  /* ---------- Controls ---------- */
+  document.querySelectorAll('.modes .opt').forEach(o=>o.onclick=()=>{
+    document.querySelectorAll('.modes .opt').forEach(x=>x.classList.remove('on'));
+    o.classList.add('on'); state.mode=o.dataset.mode;
+    if(state.results.length){ recompute(); renderActive(); }
+  });
+  document.querySelectorAll('#sens button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#sens button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); state.threshold=+b.dataset.th;
+  });
+  document.querySelectorAll('#minDigits button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#minDigits button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); state.minDigits=+b.dataset.n;
+  });
+
+  /* ---------- Read files ---------- */
+  async function extractPdf(file){
+    const buf=await file.arrayBuffer(); const pdf=await PDFJS.getDocument({data:buf}).promise; let full='';
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p); const content=await page.getTextContent();
+      let lastY=null,line='',parts=[];
+      for(const it of content.items){
+        const y=it.transform[5];
+        if(lastY!==null && Math.abs(y-lastY)>2){ parts.push(line); line=''; }
+        line+=it.str;
+        if(it.hasEOL){ parts.push(line); line=''; lastY=null; } else lastY=y;
+      }
+      if(line) parts.push(line);
+      full+=parts.join('\n'); if(p<pdf.numPages) full+='\n\n';
+    }
+    return full;
+  }
+  function readTxt(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error); r.readAsText(file,'utf-8'); }); }
+
+  /* ---------- Run ---------- */
+  document.getElementById('runBtn').onclick=run;
+  async function run(){
+    const btn=document.getElementById('runBtn'),lbl=document.getElementById('runLabel');
+    btn.disabled=true; lbl.innerHTML='<span class="spinner"></span> 處理中…';
+    state.results=[];
+    const opts={
+      name:document.getElementById('rule_name').checked,
+      twid:document.getElementById('rule_twid').checked,
+      chart:document.getElementById('rule_chart').checked,
+      date:document.getElementById('rule_date').checked,
+      longnum:document.getElementById('rule_longnum').checked,
+      checksum:document.getElementById('optChecksum').checked,
+      keepRecent:document.getElementById('optKeepRecent').checked,
+      markDoubt:document.getElementById('optMarkDoubt').checked,
+      threshold:state.threshold,
+      minDigits:state.minDigits,
+    };
+    state.markDoubt=opts.markDoubt;
+    const customs=document.getElementById('customTerms').value.split(/[\n,，]/).map(s=>s.trim()).filter(Boolean);
+    for(const f of state.files){
+      const t=fileType(f); let raw='';
+      try{ raw = t==='pdf' ? await extractPdf(f) : await readTxt(f); }
+      catch(e){ state.results.push({name:f.name,error:'讀取失敗（檔案可能損毀）'}); continue; }
+      if(t==='pdf' && !raw.trim()){ state.results.push({name:f.name,error:'此 PDF 無可擷取文字層（可能為掃描影像，需 OCR）。'}); continue; }
+      state.results.push({name:f.name, raw, matches:findMatches(raw,opts,customs)});
+    }
+    const pasted=pasteText();
+    if(pasted.trim()){ state.results.push({name:'貼上文字', raw:pasted, matches:findMatches(pasted,opts,customs)}); }
+    state.activeIdx=0; recompute(); renderResults();
+    btn.disabled=false; updateRunBtn();
+  }
+
+  function findMatches(text,opts,customs){
+    let all=[];
+    if(opts.name)    detectNames(text,opts.threshold).forEach(r=>all.push({...r,key:'name'}));
+    if(opts.twid)    detectTwid(text,opts).forEach(r=>all.push({...r,key:'twid'}));
+    if(opts.date)    detectDate(text,opts.keepRecent).forEach(r=>all.push({...r,key:'date'}));
+    if(opts.chart)   detectChart(text).forEach(r=>all.push({...r,key:'chart'}));
+    if(opts.longnum) detectLongNum(text,opts.minDigits,opts.date).forEach(r=>all.push({...r,key:'longnum'}));
+    customs.forEach(term=>{
+      const re=new RegExp(escapeRegex(term),'g'); let m;
+      while((m=re.exec(text))){ if(m.index===re.lastIndex) re.lastIndex++; all.push({start:m.index,end:m.index+term.length,value:term,key:'custom'}); }
+    });
+    // priority when spans overlap: custom > twid > date > chart > longnum > name
+    const pr={custom:0,twid:1,date:2,chart:3,longnum:4,name:5};
+    all.sort((a,b)=> a.start-b.start || pr[a.key]-pr[b.key] || (b.end-b.start)-(a.end-a.start));
+    const kept=[]; let lastEnd=-1;
+    for(const m of all){ if(m.start>=lastEnd){ kept.push(m); lastEnd=m.end; } }
+    return kept;
+  }
+
+  /* ---------- Replacement ---------- */
+  function recompute(){
+    const md=state.markDoubt!==false;
+    state.results.forEach(res=>{
+      if(res.error) return;
+      const counters={},mapping={};
+      res.replaced=build(res.raw,res.matches,state.mode,counters,mapping,md);
+      const c={}; res.matches.forEach(m=>{const lab=CATS[m.key].label; c[lab]=c[lab]||{n:0,color:CATS[m.key].color}; c[lab].n++;}); res.counts=c;
+      res.doubt=res.matches.filter(m=>m.conf==='low').length;
+    });
+  }
+  function tok(m,mode,counters,mapping,md){
+    const lab=CATS[m.key].label; const q=(md && m.conf==='low')?'?':'';
+    if(mode==='label') return `[${lab}${q}]`;
+    const mk=lab+'||'+m.value; if(mapping[mk]) return mapping[mk];
+    counters[lab]=(counters[lab]||0)+1; const t=`[${lab}_${String(counters[lab]).padStart(2,'0')}${q}]`; mapping[mk]=t; return t;
+  }
+  function build(text,matches,mode,counters,mapping,md){
+    let out='',cur=0; for(const m of matches){ out+=text.slice(cur,m.start)+tok(m,mode,counters,mapping,md); cur=m.end; } return out+text.slice(cur);
+  }
+
+  /* ---------- Render ---------- */
+  function renderResults(){
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('resultBody').classList.remove('hidden');
+    const tabs=document.getElementById('fileTabs');
+    if(state.results.length>1){
+      tabs.classList.remove('hidden');
+      tabs.innerHTML=state.results.map((r,i)=>`<button data-i="${i}" class="${i===state.activeIdx?'on':''}" title="${escapeAttr(r.name)}">${escapeHtml(r.name)}</button>`).join('');
+      tabs.querySelectorAll('button').forEach(b=>b.onclick=()=>{state.activeIdx=+b.dataset.i;renderActive();tabs.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));});
+    } else tabs.classList.add('hidden');
+    renderActive();
+  }
+  function renderActive(){
+    const res=state.results[state.activeIdx];
+    const tally=document.getElementById('tally'),view=document.getElementById('docView'),trunc=document.getElementById('truncNote');
+    trunc.classList.add('hidden');
+    if(res.error){ tally.innerHTML=`<span class="chip" style="color:var(--warn)">⚠ ${escapeHtml(res.error)}</span>`; view.innerHTML='<span style="color:var(--muted)">（無內容）</span>'; return; }
+    const entries=Object.entries(res.counts), total=entries.reduce((s,[,v])=>s+v.n,0);
+    tally.innerHTML=`<span class="chip total">共遮蔽 <span class="n">${total}</span> 項</span>`+
+      (entries.length?entries.map(([lab,v])=>`<span class="chip"><span class="dot" style="background:${v.color}"></span>${escapeHtml(lab)}<span class="n">${v.n}</span></span>`).join(''):`<span class="chip" style="color:var(--muted)">未偵測到符合規則的個資</span>`)+
+      ((state.markDoubt!==false && res.doubt)?`<span class="chip" style="background:var(--warn-soft);color:var(--warn);border-color:#f0e2c2"><span class="dot" style="background:#c99a00"></span>疑義 <span class="n" style="color:var(--warn)">${res.doubt}</span></span>`:'');
+    const LIMIT=60000;
+    if(state.view==='redacted'){
+      let t=res.replaced;
+      if(t.length>LIMIT){ view.innerHTML=hlTokens(t.slice(0,LIMIT)); showTrunc(trunc,t.length,LIMIT); } else view.innerHTML=hlTokens(t);
+    } else {
+      const h=hlOriginal(res.raw,res.matches,LIMIT); view.innerHTML=h.html; if(h.truncated) showTrunc(trunc,res.raw.length,LIMIT);
+    }
+    view.scrollTop=0;
+  }
+  function showTrunc(el,total,limit){ el.classList.remove('hidden'); el.textContent=`預覽已截斷（顯示前 ${limit.toLocaleString()} 字，全文共 ${total.toLocaleString()} 字）。下載的 TXT 為完整內容。`; }
+  function hlTokens(text){ return escapeHtml(text).replace(/\[[^\]\[\n]{1,14}?\]/g,m=>{
+    const doubt=/\?\]$/.test(m);
+    return `<span class="redtoken"${doubt?' style="background:#fbf1dc;color:#9a6b00"':''}>${m}</span>`;
+  }); }
+  function hlOriginal(text,matches,limit){
+    let html='',cur=0,truncated=false;
+    for(const m of matches){
+      if(m.start>=limit){truncated=true;break;}
+      html+=escapeHtml(text.slice(cur,m.start));
+      const col=CATS[m.key].color, end=Math.min(m.end,limit);
+      const doubt=(state.markDoubt!==false && m.conf==='low');
+      const style=doubt
+        ? `background:${hexA('#c99a00',.18)};border-bottom:2px dashed #c99a00`
+        : `background:${hexA(col,.22)};box-shadow:inset 0 -2px 0 ${col}`;
+      const tip=doubt?`${CATS[m.key].label}（疑義，請人工確認）`:CATS[m.key].label;
+      html+=`<mark title="${tip}" style="${style}">${escapeHtml(text.slice(m.start,end))}</mark>`;
+      cur=m.end; if(m.end>limit){truncated=true;break;}
+    }
+    if(!truncated){ html+=escapeHtml(text.slice(cur,Math.min(text.length,limit))); if(text.length>limit) truncated=true; }
+    return {html,truncated};
+  }
+
+  document.getElementById('viewRedacted').onclick=()=>setView('redacted');
+  document.getElementById('viewHighlight').onclick=()=>setView('highlight');
+  function setView(v){ state.view=v; document.getElementById('viewRedacted').classList.toggle('on',v==='redacted'); document.getElementById('viewHighlight').classList.toggle('on',v==='highlight'); renderActive(); }
+
+  document.getElementById('selAll').onclick=()=>{
+    if(state.view!=='redacted') setView('redacted');
+    const el=document.getElementById('docView');
+    const sel=window.getSelection(); sel.removeAllRanges();
+    const range=document.createRange(); range.selectNodeContents(el); sel.addRange(range);
+  };
+  document.getElementById('copyBtn').onclick=async()=>{
+    const res=state.results[state.activeIdx]; if(!res||res.error) return;
+    const btn=document.getElementById('copyBtn'), old=btn.textContent;
+    const done=()=>{ btn.textContent='已複製 ✓'; setTimeout(()=>btn.textContent=old,1400); };
+    try{ await navigator.clipboard.writeText(res.replaced); done(); }
+    catch(e){
+      const ta=document.createElement('textarea'); ta.value=res.replaced;
+      ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta);
+      ta.select(); try{ document.execCommand('copy'); done(); }catch(_){ btn.textContent='請手動複製'; setTimeout(()=>btn.textContent=old,1400); }
+      document.body.removeChild(ta);
+    }
+  };
+  document.getElementById('dlOne').onclick=()=>{ const res=state.results[state.activeIdx]; if(res.error) return; download(res.name.replace(/\.(pdf|txt)$/i,'')+'_deid.txt',res.replaced); };
+  document.getElementById('dlAll').onclick=()=>{ const parts=state.results.map(r=>r.error?`===== ${r.name} =====\n[${r.error}]\n`:`===== ${r.name} =====\n${r.replaced}`); download('deidentified_all.txt',parts.join('\n\n\n')); };
+  function download(name,content){ const blob=new Blob([content],{type:'text/plain;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+
+  function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+  function escapeAttr(s){return s.replace(/"/g,'&quot;');}
+  function escapeRegex(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+  function hexA(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+})();
+</script>
+</body>
+</html>
