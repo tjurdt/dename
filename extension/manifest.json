@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OOO 敏感資料遮罩",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "在本機遮住網頁中的姓名、出生日期、病歷號、身分證號等敏感文字。螢幕遮罩與複製貼上遮罩可分別開關。",
   "permissions": ["storage", "activeTab"],
   "host_permissions": ["http://*/*", "https://*/*"],

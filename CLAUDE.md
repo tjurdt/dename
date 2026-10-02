@@ -20,6 +20,8 @@
 | 網站：OOO / 類別標籤 / 編號輸出 | `web/src/redact.js` | 網站 |
 | 網站：網站專屬預設值（例：預設遮 email、電話） | `web/src/settings.js` | 網站 |
 | 網站：讀 PDF / TXT | `web/src/read-file.js` | 網站 |
+| 網站：PDF 斷行接回段落、康熙部首字正規化 | `web/src/pdf-text.js` | 網站 |
+| 常用詞被誤判成姓名 | `core/namedata.js` 的 `probedWords`（加詞前先確認它不會是人名） | **網站 + 插件** |
 | 插件：網頁上的遮罩行為 | `extension/content.js` | 插件 |
 | 插件：彈出面板 | `extension/popup.html/css/js` | 插件 |
 | 插件：版本號、權限 | `extension/manifest.json` | 插件 |
@@ -80,6 +82,11 @@ npm run test:unit    # 快速：不開瀏覽器
   所以裝了插件的人在網站上「標示原文」仍看得到原文。不要拿掉這個屬性。
 
 ## 已知技術債 / 待辦
+
+- **漏遮**：姓名後面緊接的詞若不在 `core/masker.js` 的 `following` 清單（例如「王小明監考」），整個姓名不會被遮。
+  這是插件原本的規則，修改會影響插件的誤遮率，要先討論再改。
+- 插件「貼上時遮罩」從 Chrome PDF 檢視器複製的文字，也會帶有康熙部首字（⽣、⾼），姓氏會比對不到。
+  網站已用 `normalizeCjk` 處理；插件端尚未處理。
 
 - `core/masker.js` 匯出物件裡 `isBirthLabel` 寫了兩次（無害）。下次插件發版時順手刪掉，
   並移除 `scripts/build.mjs` 裡對應的 `duplicate-object-key` 靜音設定。

@@ -46,6 +46,7 @@
         </button>
         <input type="file" id="fileInput" accept="application/pdf,.pdf,text/plain,.txt" multiple hidden>
         <ul class="filelist" id="fileList"></ul>
+        <label class="row pdf-opt" data-settings><input id="pdfJoinLines" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">PDF：把段落中的自動折行接回來<small>關閉則照 PDF 的每一行換行（適合表格、清單）</small></span></label>
       </div>
       <div class="input-block paste-wrap">
         <div class="input-label"><span>直接貼上文字</span><small>可與上傳檔案一起處理</small></div>
@@ -54,7 +55,7 @@
     </div>
   </section>
 
-  <div class="settings" id="settings">
+  <div class="settings" id="settings" data-settings>
     <section class="card tone-what">
       <h2>2 · 要遮什麼</h2>
       <div class="rule-grid">

@@ -1,5 +1,5 @@
-// Website settings = the extension's settings shape (core/settings.js) plus two
-// website-only output options. Sharing the shape keeps the two products interchangeable.
+// Website settings = the extension's settings shape (core/settings.js) plus a few
+// website-only options (outputMode, markDoubt, pdfJoinLines). Sharing the shape keeps the two products interchangeable.
 import OOOSettings from '../../core/settings.js';
 import { OUTPUT_MODES } from './redact.js';
 
@@ -16,6 +16,7 @@ export function normalizeWeb(value) {
     ...core,
     outputMode: OUTPUT_MODES.includes(value.outputMode) ? value.outputMode : 'replace',
     markDoubt: typeof value.markDoubt === 'boolean' ? value.markDoubt : false,
+    pdfJoinLines: typeof value.pdfJoinLines === 'boolean' ? value.pdfJoinLines : true,
   };
 }
 

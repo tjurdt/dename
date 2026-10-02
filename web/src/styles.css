@@ -52,6 +52,7 @@ h2{margin:0 0 2px;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(
 .paste-wrap textarea{flex:1;min-height:150px}
 .filelist{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .filelist:empty{display:none}
+.pdf-opt{margin-top:8px}
 .filelist li{display:flex;align-items:center;gap:8px;font-size:12.5px;background:#f7faf9;border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
 .filelist .tag{font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px;background:var(--brand-soft);color:var(--brand-ink)}
 .filelist .fn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

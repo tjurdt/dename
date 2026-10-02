@@ -93,6 +93,33 @@ test('TXT and PDF uploads are read locally, PDF through the inlined pdf.js worke
   await context.close();
 });
 
+test('Chinese PDF: wrapped lines rejoin, look-alike radicals normalise, words are not names', async () => {
+  // Chromium prints a narrow, wrapping cover letter; the built site then reads it back.
+  const printer = await browser.newPage();
+  const para1 = '您好，我是醫學系六年級學生王小明，現任實習醫師，持有西餐丙級與 ACLS 高級急救證照，並已通過一階醫師國考。除了能在旅客突發狀況時提供專業急救與基本處置，我也樂於協助房務與櫃檯工作。';
+  const para2 = '許多過往小幫手在文章中分享，您們對旅客與小幫手的用心照顧，讓我非常感動，非常希望有機會成為團隊的一份子。';
+  await printer.setContent(`<body style="font:16px 'Microsoft JhengHei','Noto Sans CJK TC','WenQuanYi Zen Hei',sans-serif;width:430px;margin:40px">
+    <h3>自我介紹</h3><p>${para1}</p><p>${para2}</p><p>經歷：實習醫師</p></body>`);
+  const pdf = await printer.pdf({ format: 'A4' });
+  await printer.close();
+
+  const { page, problems, context } = await open();
+  await page.setInputFiles('#fileInput', [{ name: 'letter.pdf', mimeType: 'application/pdf', buffer: pdf }]);
+  await runAndWait(page);
+  await page.click('#viewHighlight');
+  const original = await docText(page);
+  assert.doesNotMatch(original, /[⺀-⿟]/, 'radical look-alikes left in the text');
+  assert.ok(original.includes(para1), 'first paragraph was not rejoined:\n' + original);
+  assert.ok(original.includes(para2), 'second paragraph was not rejoined:\n' + original);
+  assert.deepEqual(await page.locator('#docView mark').allTextContents(), ['王小明']);
+
+  // Turning the option off falls back to one output line per PDF line.
+  await page.locator('label:has(#pdfJoinLines) .box').click();
+  assert.ok((await docText(page)).split('\n').length > original.split('\n').length);
+  assert.deepEqual(problems, []);
+  await context.close();
+});
+
 test('phone width: no horizontal page scroll', async () => {
   const { page, context } = await open({ width: 375, height: 800 });
   await page.fill('#pasteBox', '姓名：王小明 ' + 'x'.repeat(400));
