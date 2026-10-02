@@ -1,0 +1,17 @@
+{
+  "name": "dename",
+  "private": true,
+  "type": "module",
+  "description": "OOO 去識別化：共用辨識引擎 core/ + 網站 web/ + Chrome 插件 extension/",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "npm run build && npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test \"tests/core/*.test.cjs\" \"tests/web/*.test.js\" \"tests/build/*.test.js\"",
+    "test:e2e": "node --test \"tests/e2e/*.test.js\""
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "fflate": "^0.8.3",
+    "playwright": "^1.63.0"
+  }
+}

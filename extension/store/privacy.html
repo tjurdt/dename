@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>隱私權政策｜OOO 敏感資料遮罩</title>
+<meta name="description" content="OOO 敏感資料遮罩 Chrome 擴充功能的隱私權政策。本外掛不收集、不傳輸、不販售任何使用者資料。">
+<style>
+  :root{
+    --ink:#16241f; --muted:#5f7770; --line:#dbe7e2; --bg:#f6faf8;
+    --card:#fff; --accent:#0f766e; --accent-soft:#e8f2ee;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.75 -apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:32px 20px 72px}
+  header{display:flex;align-items:center;gap:14px;padding-bottom:20px;border-bottom:1px solid var(--line)}
+  .mark{width:52px;height:52px;flex:none;border-radius:14px;
+    background:linear-gradient(160deg,#1e6a5e,#092a25);display:grid;place-items:center}
+  .dots{width:30px;height:10px;background:
+    radial-gradient(circle 5px at 5px 5px,#f2fbf8 96%,transparent 0),
+    radial-gradient(circle 5px at 15px 5px,#f2fbf8 96%,transparent 0),
+    radial-gradient(circle 5px at 25px 5px,#f2fbf8 96%,transparent 0)}
+  h1{margin:0;font-size:22px;line-height:1.35}
+  .meta{margin:2px 0 0;font-size:13px;color:var(--muted)}
+  h2{margin:36px 0 10px;font-size:17px;color:var(--accent)}
+  p,li{margin:10px 0}
+  ul{padding-left:20px}
+  .lede{margin:24px 0;padding:16px 18px;border-radius:12px;background:var(--accent-soft);
+    border-left:4px solid var(--accent);font-weight:600}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px 18px 18px;margin:14px 0}
+  .card h3{font-size:14px;color:var(--accent);margin:16px 0 4px}
+  code{background:#eef4f2;padding:1px 6px;border-radius:5px;font-size:14px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .note{border-left:4px solid #b45309;background:#fdf6ec;padding:14px 18px;border-radius:10px;margin:16px 0}
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+  a{color:var(--accent)}
+  @media (max-width:520px){ .wrap{padding:24px 16px 56px} h1{font-size:19px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="mark" aria-hidden="true"><span class="dots"></span></div>
+  <div>
+    <h1>隱私權政策</h1>
+    <p class="meta">OOO 敏感資料遮罩（Chrome 擴充功能）・最後更新 2026-09-08・適用版本 0.6.1</p>
+  </div>
+</header>
+
+<p class="lede">本外掛不收集、不傳輸、不儲存、不販售任何使用者資料。所有處理都在使用者的瀏覽器內完成，本外掛沒有伺服器，也不會發出任何網路請求。</p>
+
+<h2>本外掛會處理什麼</h2>
+<p>為了達成遮蔽敏感資料的功能，內容腳本會在使用者開啟的網頁上讀取文字節點、表單欄位值，以及複製與貼上事件中的剪貼簿文字。這些內容只存在於該分頁的記憶體中，用於比對遮蔽規則，處理完即隨頁面關閉而消失。</p>
+<p>本外掛不會：</p>
+<ul>
+  <li>將任何網頁內容、剪貼簿內容或網址傳送到任何伺服器</li>
+  <li>記錄瀏覽紀錄、輸入內容或使用行為</li>
+  <li>使用分析、追蹤或廣告工具</li>
+  <li>載入任何外部程式碼</li>
+</ul>
+
+<h2>儲存的資料</h2>
+<p>只有使用者自己在外掛面板中設定的偏好。分成兩部分存放：</p>
+
+<div class="card">
+  <h3>透過 <code>chrome.storage.sync</code> 儲存 — 會隨 Google 帳號同步到其他電腦</h3>
+  <ul>
+    <li>螢幕遮罩與複製貼上遮罩的開關狀態</li>
+    <li>要遮蔽哪些資料類別</li>
+    <li>替換文字</li>
+    <li>病歷號格式設定</li>
+  </ul>
+  <h3>透過 <code>chrome.storage.local</code> 儲存 — 只留在本機、不同步</h3>
+  <ul>
+    <li>已停用遮蔽的網站主機名稱清單、使用者手動加入的「一定要遮的姓名」</li>
+  </ul>
+</div>
+
+<p>這樣區分的理由是，已停用網站清單可能包含機構內部系統的名稱，而手動姓名清單就是真人的姓名；兩者都不應為了同步偏好而離開使用者的電腦。</p>
+<p>同步資料存放在使用者自己的 Google 帳號中，本外掛沒有伺服器，無法讀取這些內容。使用者可在 Chrome 的同步設定中關閉「擴充功能」項目，外掛會自動改為只存本機。移除外掛時一併刪除。</p>
+<p>面板中「本頁例外清單」填入的姓名與保留詞只存在於當前分頁的記憶體，重新整理或關閉分頁即消失，不會寫入任何儲存空間。</p>
+
+<h2>權限</h2>
+<ul>
+  <li><code>storage</code>：儲存上述設定。</li>
+  <li><code>activeTab</code>：面板開啟時讀取目前分頁的網址，用來顯示與切換「在這個網站啟用」。不讀取分頁內容。</li>
+  <li>一般網頁的存取權（<code>http://*/*</code>、<code>https://*/*</code>）：遮蔽功能必須在使用者實際檢視資料的網頁上執行。存取範圍僅限於本機的讀取與改寫。</li>
+</ul>
+
+<h2>資料來源</h2>
+<p>姓氏資料取自內政部公開資料集（政府資料開放授權條款第 1 版）。常見名字資料整理自內政部《全國姓名統計分析》、中央健康保險署及臺北市民政局的公開統計。這些是靜態資料，隨套件一起安裝，不會在執行時下載。</p>
+
+<h2>免責</h2>
+<div class="note">
+  <p style="margin-top:0">本外掛是規則比對工具，不構成完整的去識別化。誤遮與漏遮都會發生，原始資料仍存在於原始網站、瀏覽器記憶體與網路流量中。</p>
+  <p style="margin-bottom:0">使用者在對外提供資料前仍須自行檢查，並遵守所屬機構與相關法規的要求。</p>
+</div>
+
+<h2>變更與聯絡</h2>
+<p>本政策如有變更，會更新本頁的最後更新日期。</p>
+<p>聯絡方式：<a href="mailto:請填入信箱">請填入你要公開的聯絡信箱</a></p>
+
+<footer>
+  OOO 敏感資料遮罩・本頁為 Chrome 線上應用程式商店上架所需的隱私權政策。
+</footer>
+
+</div>
+</body>
+</html>

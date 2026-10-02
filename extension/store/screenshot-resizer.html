@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>商店截圖尺寸工具</title>
+<style>
+  :root{--ink:#16241f;--muted:#5f7770;--line:#dbe7e2;--bg:#f6faf8;--accent:#0f766e;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif}
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 20px 60px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{margin:0 0 20px;color:var(--muted);font-size:13px}
+  #drop{border:2px dashed var(--line);border-radius:14px;background:#fff;padding:38px 20px;
+    text-align:center;color:var(--muted);cursor:pointer;transition:.15s}
+  #drop.over{border-color:var(--accent);background:#eaf4f1;color:var(--accent)}
+  #drop b{color:var(--ink);display:block;font-size:16px;margin-bottom:4px}
+  .panel{display:none;margin-top:18px}
+  .panel.on{display:block}
+  .bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);
+    border-radius:12px;padding:12px 14px;margin-bottom:14px}
+  .grp{display:flex;align-items:center;gap:7px;font-size:13px}
+  button{border:0;border-radius:8px;padding:7px 13px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+  .seg button{background:#eef4f2;color:var(--accent)}
+  .seg button.on{background:var(--accent);color:#fff}
+  .go{background:var(--accent);color:#fff;padding:9px 18px}
+  .ghost{background:#eef4f2;color:var(--accent)}
+  input[type=range]{width:150px}
+  input[type=color]{width:34px;height:28px;padding:0;border:1px solid var(--line);border-radius:6px;background:none}
+  #stage{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  canvas{max-width:100%;height:auto;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.14);cursor:grab;touch-action:none}
+  canvas.drag{cursor:grabbing}
+  .hint{color:var(--muted);font-size:12.5px;margin:10px 0 0}
+  .warn{color:#b45309}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>商店截圖尺寸工具</h1>
+  <p class="sub">把任意尺寸的截圖輸出成 Chrome 線上應用程式商店要求的 1280×800 或 640×400。全部在本機處理，圖片不會離開這個分頁。</p>
+
+  <div id="drop">
+    <b>把截圖拖進來</b>
+    也可以點這裡選檔案，或直接 Ctrl/Cmd+V 貼上
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="bar">
+      <div class="grp seg">
+        <button data-size="1280x800" class="on">1280×800</button>
+        <button data-size="640x400">640×400</button>
+      </div>
+      <div class="grp">縮放 <input type="range" id="zoom" min="20" max="300" value="100"></div>
+      <div class="grp">留白色 <input type="color" id="bgc" value="#f6faf8"></div>
+      <button class="ghost" id="fit">整張塞滿</button>
+      <button class="ghost" id="fill">填滿裁切</button>
+      <button class="go" id="save">下載 PNG</button>
+    </div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <p class="hint">在圖上拖曳可以調整位置。<span id="note"></span></p>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  const drop=document.getElementById('drop'), panel=document.getElementById('panel');
+  const note=document.getElementById('note');
+  let img=null, W=1280, H=800, scale=1, ox=0, oy=0, bg='#f6faf8';
+
+  function draw(){
+    if(!img)return;
+    cv.width=W; cv.height=H;
+    ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+    const w=img.width*scale, h=img.height*scale;
+    ctx.imageSmoothingQuality='high';
+    ctx.drawImage(img,ox,oy,w,h);
+    // Warn when the source is being enlarged, which shows up as a soft screenshot.
+    note.className = scale>1.02 ? 'warn' : '';
+    note.textContent = scale>1.02
+      ? '目前放大了 '+Math.round(scale*100)+'%，成品會偏糊；建議重截一張更大的原圖。'
+      : '原圖 '+img.width+'×'+img.height+'，輸出 '+W+'×'+H+'。';
+  }
+  const fit=cover=>{
+    if(!img)return;
+    const s=Math[cover?'max':'min'](W/img.width,H/img.height);
+    scale=s; ox=(W-img.width*s)/2; oy=(H-img.height*s)/2;
+    document.getElementById('zoom').value=Math.round(Math.min(300,Math.max(20,s*100)));
+    draw();
+  };
+  function load(file){
+    if(!file||!file.type.startsWith('image/'))return;
+    const url=URL.createObjectURL(file), next=new Image();
+    next.onload=()=>{img=next;panel.classList.add('on');fit(true);URL.revokeObjectURL(url);};
+    next.src=url;
+  }
+
+  drop.addEventListener('click',()=>{
+    const input=document.createElement('input');
+    input.type='file'; input.accept='image/*';
+    input.onchange=()=>load(input.files[0]);
+    input.click();
+  });
+  ['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over');}));
+  ['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over');}));
+  drop.addEventListener('drop',e=>load(e.dataTransfer.files[0]));
+  window.addEventListener('paste',e=>{
+    for(const item of e.clipboardData.files||[])return load(item);
+  });
+
+  document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    [W,H]=b.dataset.size.split('x').map(Number);
+    fit(true);
+  }));
+  document.getElementById('zoom').addEventListener('input',e=>{
+    if(!img)return;
+    const next=Number(e.target.value)/100;
+    // Zoom about the centre so the framing does not jump.
+    ox=W/2-(W/2-ox)*(next/scale); oy=H/2-(H/2-oy)*(next/scale);
+    scale=next; draw();
+  });
+  document.getElementById('bgc').addEventListener('input',e=>{bg=e.target.value;draw();});
+  document.getElementById('fit').addEventListener('click',()=>fit(false));
+  document.getElementById('fill').addEventListener('click',()=>fit(true));
+  document.getElementById('save').addEventListener('click',()=>{
+    if(!img)return;
+    const a=document.createElement('a');
+    a.download='store-screenshot-'+W+'x'+H+'.png';
+    a.href=cv.toDataURL('image/png');
+    a.click();
+  });
+
+  let dragging=false,px=0,py=0;
+  cv.addEventListener('pointerdown',e=>{
+    dragging=true;cv.classList.add('drag');cv.setPointerCapture(e.pointerId);
+    px=e.clientX;py=e.clientY;
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    const ratio=cv.width/cv.getBoundingClientRect().width;
+    ox+=(e.clientX-px)*ratio; oy+=(e.clientY-py)*ratio;
+    px=e.clientX;py=e.clientY;draw();
+  });
+  ['pointerup','pointercancel'].forEach(t=>cv.addEventListener(t,()=>{dragging=false;cv.classList.remove('drag');}));
+})();
+</script>
+</body>
+</html>

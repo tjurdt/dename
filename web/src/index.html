@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<!-- 根目錄的 index.html 是 `npm run build` 由 web/src/index.html 產生的。請改 web/src/，不要直接改根目錄的 index.html。 -->
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' blob:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="在瀏覽器內遮住 PDF 與文字檔中的姓名、出生日期、病歷號、身分證號。與 OOO 敏感資料遮罩 Chrome 插件使用同一套辨識規則，全程本機處理。">
+<title>OOO 文件去識別化</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,<!--@base64:../../extension/icons/icon32.png-->">
+<style>
+<!--@inline:./styles.css--></style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+        <defs><linearGradient id="markBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b7d6f"/><stop offset=".5" stop-color="#1c5c52"/><stop offset="1" stop-color="#0d3b34"/></linearGradient></defs>
+        <rect width="40" height="40" rx="10" fill="url(#markBg)"/>
+        <rect x="5.5" y="13.5" width="29" height="13" rx="6.5" fill="#0a1f1b"/>
+        <g fill="none" stroke="#f2fbf8" stroke-width="1.6"><circle cx="12.6" cy="20" r="3.3"/><circle cx="20" cy="20" r="3.3"/><circle cx="27.4" cy="20" r="3.3"/></g>
+      </svg>
+      <div class="brand-text">
+        <h1>OOO 文件去識別化</h1>
+        <p>PDF・TXT・貼上文字 → 遮住姓名、出生日期、病歷號、身分證號 → 輸出 TXT</p>
+      </div>
+    </div>
+    <div class="header-side">
+      <span class="localbadge" title="所有處理都在你的瀏覽器內完成">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>全程本機處理・檔案不會上傳
+      </span>
+      <a class="ext-link" href="https://chromewebstore.google.com/detail/cgmlhgmlmojmigmkdahomgcfplcppfjm" target="_blank" rel="noopener noreferrer">Chrome 插件版</a>
+    </div>
+  </header>
+
+  <section class="card tone-input">
+    <h2>1 · 輸入內容</h2>
+    <div class="input-layout">
+      <div class="input-block">
+        <div class="input-label"><span>上傳檔案</span><small>可一次選多個 PDF / TXT</small></div>
+        <button type="button" class="drop" id="drop">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          <b>拖曳 PDF 或 TXT 到這裡</b>
+          <small>或點擊選擇檔案・PDF 需有文字層</small>
+        </button>
+        <input type="file" id="fileInput" accept="application/pdf,.pdf,text/plain,.txt" multiple hidden>
+        <ul class="filelist" id="fileList"></ul>
+      </div>
+      <div class="input-block paste-wrap">
+        <div class="input-label"><span>直接貼上文字</span><small>可與上傳檔案一起處理</small></div>
+        <textarea id="pasteBox" spellcheck="false" placeholder="把要去識別化的文字貼在這裡…"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <div class="settings" id="settings">
+    <section class="card tone-what">
+      <h2>2 · 要遮什麼</h2>
+      <div class="rule-grid">
+        <label class="row"><input id="ruleNames" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">姓名<small>姓氏排名＋常見名字＋欄位與前後文</small></span></label>
+        <label class="row"><input id="ruleBirthDate" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">出生日期<small>西元／民國、各種寫法</small></span></label>
+        <label class="row"><input id="ruleMrn" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">病歷號<small>6–8 碼，8 碼須過檢查碼</small></span></label>
+        <label class="row"><input id="ruleNationalId" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">身分證／居留證號<small>A123456789</small></span></label>
+        <label class="row"><input id="ruleEmail" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">電子郵件</span></label>
+        <label class="row"><input id="rulePhone" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">電話號碼</span></label>
+      </div>
+
+      <details>
+        <summary>姓名細項</summary>
+        <label class="row"><input id="givenNames" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">出現過全名後，只提名字也遮<small>例如全文有「周宥安」，「宥安表示」也會遮</small></span></label>
+        <label class="field" for="surnameLimit">姓氏範圍</label>
+        <select id="surnameLimit">
+          <option value="500">官方前 500 大姓（預設）</option>
+          <option value="100">官方前 100 大姓</option>
+        </select>
+        <p class="hint">姓名判斷使用內政部姓氏排名與公開的常見名字統計，加上欄位標籤、職稱與前後文。仍會有誤遮與漏遮。</p>
+      </details>
+
+      <details>
+        <summary>日期範圍</summary>
+        <label class="field" for="dateMode">要遮哪些日期</label>
+        <select id="dateMode">
+          <option value="unlabelled">生日＋沒有標明用途的日期（預設）</option>
+          <option value="labelled">只遮生日標籤附近的日期</option>
+          <option value="all">所有近 115 年的日期</option>
+        </select>
+        <p class="hint">支援 1986/03/02、19860302、民國75年3月2日、75.03.02、03/02/1986 等寫法，只認最近 115 年內真實存在的日期，未來日期一律排除。預設保留標明用途的日期，例如檢驗日、入院日、手術日。</p>
+      </details>
+
+      <details>
+        <summary>病歷號格式</summary>
+        <label class="field" for="mrnMode">格式</label>
+        <select id="mrnMode">
+          <option value="all">預設格式（6–8 碼）</option>
+          <option value="checked">只遮 8 碼且檢查碼相符</option>
+          <option value="custom">自訂格式</option>
+        </select>
+        <div id="mrnCustom" class="hidden">
+          <textarea id="mrnPatterns" rows="3" spellcheck="false" placeholder="一行一種格式&#10;# 數字　A 英文字母　* 兩者皆可&#10;例如：A####### 或 ##-######"></textarea>
+          <label class="row"><input id="mrnKeepDefault" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">同時保留預設格式</span></label>
+        </div>
+        <label class="row"><input id="mrnExcludeDates" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">不把近期日期當成病歷號<small>過去半年至未來一個月</small></span></label>
+      </details>
+    </section>
+
+    <section class="card tone-list">
+      <h2>例外清單</h2>
+      <label class="field" for="manualNames">一定要遮的姓名或詞</label>
+      <textarea id="manualNames" rows="4" spellcheck="false" placeholder="王小明&#10;達悟·拉飛&#10;某某診所"></textarea>
+      <p class="hint">一行一個。填全名可連帶遮住只提名字的地方。只存在這個分頁，重新整理就清除。</p>
+      <label class="field" for="keepWords">不要遮的詞</label>
+      <textarea id="keepWords" rows="3" spellcheck="false" placeholder="海研社&#10;林口長庚"></textarea>
+      <p class="hint">一行一詞，至少兩字。優先於所有自動規則，用來修正誤遮；會記在這個瀏覽器。</p>
+    </section>
+
+    <section class="card tone-out">
+      <h2>輸出方式</h2>
+      <div class="modes" role="radiogroup" aria-label="取代方式">
+        <label class="opt"><input type="radio" name="outputMode" value="replace"><span><b>OOO</b><small>同插件，全部換成替換文字</small></span></label>
+        <label class="opt"><input type="radio" name="outputMode" value="label"><span><b>類別標籤</b><small>換成 [姓名]、[病歷號]</small></span></label>
+        <label class="opt"><input type="radio" name="outputMode" value="number"><span><b>編號代號</b><small>同值同號 [姓名_01]，保留關聯</small></span></label>
+      </div>
+      <div id="replacementRow">
+        <label class="field" for="replacement">替換文字</label>
+        <input id="replacement" maxlength="12" autocomplete="off" spellcheck="false">
+      </div>
+      <label class="row"><input id="markDoubt" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">標註有疑義的姓名<small>只靠姓氏猜測的項目標成 [姓名?]，標示原文時以虛線框出</small></span></label>
+      <p class="hint">設定會記在這個瀏覽器；改設定後結果會立即更新。</p>
+    </section>
+  </div>
+
+  <div class="runbar">
+    <p><b>設定好就可以開始</b>處理全程留在這個瀏覽器，不會把檔案送出。</p>
+    <button type="button" class="btn solid" id="runBtn" disabled>請先選擇檔案或貼上文字</button>
+  </div>
+
+  <section class="card results" id="resultPanel" aria-live="polite">
+    <div class="empty" id="emptyState">
+      <svg viewBox="0 0 64 24" aria-hidden="true"><rect x="1" y="1" width="62" height="22" rx="11"/><circle cx="20" cy="12" r="5"/><circle cx="32" cy="12" r="5"/><circle cx="44" cy="12" r="5"/></svg>
+      <b>尚未產生結果</b>
+      <span>加入檔案或貼上文字，按「開始去識別化」。</span>
+    </div>
+    <div id="resultBody" class="hidden">
+      <div class="tally" id="tally"></div>
+      <div class="filetabs hidden" id="fileTabs" role="tablist"></div>
+      <div class="toolbar">
+        <div class="seg"><button type="button" id="viewRedacted" class="on">去識別化後</button><button type="button" id="viewHighlight">標示原文</button></div>
+        <div class="seg"><button type="button" id="wrapOn" class="on">自動換行</button><button type="button" id="wrapOff">不換行</button></div>
+        <span class="grow"></span>
+        <button type="button" class="btn tonal" id="copyBtn">複製結果</button>
+        <button type="button" class="btn tonal" id="dlOne">下載此檔 .txt</button>
+        <button type="button" class="btn tonal" id="dlAll">全部合併下載</button>
+      </div>
+      <!-- data-ooo-extension-ui：讓已安裝的 OOO 插件不要遮這一區，才能在「標示原文」檢視原文。 -->
+      <pre class="doc" id="docView" data-ooo-extension-ui="web-result" tabindex="0"></pre>
+      <div class="trunc hidden" id="truncNote"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="note">
+      <b>使用限制</b>：這是規則比對工具，不是完整的去識別化方案，<b>一定會有誤遮與漏遮</b>（罕見姓名用字、外文與原住民族姓名、非典型字數容易漏；姓氏開頭的一般詞可能誤遮）。用於臨床或研究資料時，請用「標示原文」逐項人工複核後再採用，並遵守所屬機構規範。
+    </div>
+    <div class="ext-promo">
+      <svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#1c5c52"/><rect x="5.5" y="13.5" width="29" height="13" rx="6.5" fill="#0a1f1b"/><g fill="none" stroke="#f2fbf8" stroke-width="1.6"><circle cx="12.6" cy="20" r="3.3"/><circle cx="20" cy="20" r="3.3"/><circle cx="27.4" cy="20" r="3.3"/></g></svg>
+      <p><b>要在網頁上直接遮？</b>同一套辨識規則也做成 Chrome 插件「OOO 敏感資料遮罩」，可在任何網頁即時遮住畫面，並在複製貼上時去識別。<a href="https://chromewebstore.google.com/detail/cgmlhgmlmojmigmkdahomgcfplcppfjm" target="_blank" rel="noopener noreferrer">前往 Chrome 線上應用程式商店</a></p>
+    </div>
+    <p class="fine">全部在瀏覽器端執行，無後端、無網路傳輸。pdf.js 3.11.174 已內嵌於本檔，並以 Content-Security-Policy 鎖死所有對外連線，可存檔後離線使用。掃描影像 PDF（無文字層）無法擷取。<span id="buildInfo"></span></p>
+  </footer>
+</div>
+
+<script>
+<!--@inline:../vendor/pdfjs-3.11.174/pdf.js--></script>
+<script id="pdfjsWorker" type="javascript/worker">
+<!--@inline:../vendor/pdfjs-3.11.174/pdf.worker.js--></script>
+<script>
+<!--@inline:@bundle--></script>
+</body>
+</html>
