@@ -8,8 +8,8 @@ import { ROOT, buildWebHtml, extensionFiles, extensionVersion, EXTENSION_FILES }
 
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-test('root index.html (served by GitHub Pages) is the fresh build of web/', () => {
-  assert.ok(read('index.html') === buildWebHtml(),
+test('root index.html (served by GitHub Pages) is the fresh build of web/', async () => {
+  assert.ok(read('index.html') === await buildWebHtml(),
     'index.html is stale or was edited by hand. Edit web/ and run `npm run build`.');
 });
 
@@ -51,7 +51,14 @@ test('extension version is stated consistently', () => {
 });
 
 test('the shared engine lives only in core/ (no drifting copies)', () => {
-  const coreFiles = EXTENSION_FILES.filter(([, from]) => from.startsWith('core/')).map(([n]) => n);
-  for (const dir of ['extension', 'web/src']) for (const n of coreFiles)
-    assert.equal(fs.existsSync(path.join(ROOT, dir, n)), false, `${dir}/${n} duplicates core/${n}`);
+  // Lines that only exist inside the core files. A copy elsewhere would silently diverge.
+  const signatures = ['g.MaskOOO=Object.freeze(api)', 'g.OOOSettings={normalize', 'g.OOOSurnames', 'g.OOONameData'];
+  const coreSources = new Set(EXTENSION_FILES.filter(([, from]) => from.startsWith('core/')).map(([, from]) => from));
+  const walk = dir => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap(e =>
+    e.isDirectory() ? walk(`${dir}/${e.name}`) : /\.(js|cjs|mjs|html)$/.test(e.name) ? [`${dir}/${e.name}`] : []);
+  for (const file of ['extension', 'web/src'].flatMap(walk)) {
+    if (coreSources.has(file)) continue;
+    const text = read(file);
+    for (const sig of signatures) assert.ok(!text.includes(sig), `${file} contains core code (${sig}); import it from core/ instead`);
+  }
 });

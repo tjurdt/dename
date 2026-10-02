@@ -14,3 +14,6 @@ jobs:
       - run: npm ci
       # Unit + build guards. Fails if index.html was not rebuilt after editing web/ or core/.
       - run: npm run test:unit
+      - run: npx playwright install --with-deps chromium
+      # Real-browser smoke test of the committed index.html (the live site).
+      - run: npm run test:e2e
