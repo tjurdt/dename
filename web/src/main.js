@@ -4,18 +4,18 @@ import { detect, CATEGORIES } from './engine.js';
 import { createNumberer, joinSegments, redactSegments, tally } from './redact.js';
 import { loadSettings, normalizeWeb, parseList, saveSettings } from './settings.js';
 import { categoryCss, escapeHtml, highlightHtml, PREVIEW_LIMIT, redactedHtml } from './render.js';
-import { fileKind, readFileText } from './read-file.js';
+import { fileKind, readFileSource, sourceText } from './read-file.js';
 
 const $ = id => document.getElementById(id);
 
 let settings = loadSettings();
 const state = {
   files: [],        // File objects waiting to be processed
-  docs: [],         // [{name, text, error, spans, segments, output, tally}] from the last run
+  docs: [],         // [{name, source, error, text, spans, segments, output, tally}] from the last run
   active: 0,
   view: 'redacted', // 'redacted' | 'highlight'
 };
-const textCache = new WeakMap(); // File → {text|error}; re-analysis never re-reads a PDF
+const sourceCache = new WeakMap(); // File → readFileSource(); re-analysis never re-reads a PDF
 
 /* ---------- settings form ---------- */
 
@@ -25,7 +25,7 @@ const CHECKS = {
   ruleBirthDate: ['rules', 'birthDate'], ruleNationalId: ['rules', 'nationalId'],
   ruleEmail: ['rules', 'email'], rulePhone: ['rules', 'phone'],
   givenNames: ['givenNames'], mrnKeepDefault: ['mrnKeepDefault'], mrnExcludeDates: ['mrnExcludeDates'],
-  markDoubt: ['markDoubt'],
+  markDoubt: ['markDoubt'], pdfJoinLines: ['pdfJoinLines'],
 };
 const SELECTS = ['surnameLimit', 'dateMode', 'mrnMode'];
 const LISTS = ['manualNames', 'keepWords'];
@@ -54,12 +54,13 @@ function readSettingsForm() {
   return normalizeWeb(next);
 }
 
-$('settings').addEventListener('change', () => {
+function onSettingsChange() {
   settings = readSettingsForm();
   saveSettings(settings);
   paintSettings();
   if (state.docs.length) { analyze(); renderResults(); }
-});
+}
+for (const el of document.querySelectorAll('[data-settings]')) el.addEventListener('change', onSettingsChange);
 
 /* ---------- inputs ---------- */
 
@@ -108,11 +109,12 @@ async function run() {
   btn.innerHTML = '<span class="spinner"></span>處理中…';
   const docs = [];
   for (const file of state.files) {
-    if (!textCache.has(file)) textCache.set(file, await readFileText(file));
-    docs.push({ name: file.name, ...textCache.get(file) });
+    if (!sourceCache.has(file)) sourceCache.set(file, await readFileSource(file));
+    const source = sourceCache.get(file);
+    docs.push({ name: file.name, source, error: source.error });
   }
   const pasted = $('pasteBox').value;
-  if (pasted.trim()) docs.push({ name: '貼上文字', text: pasted });
+  if (pasted.trim()) docs.push({ name: '貼上文字', source: { text: pasted } });
   state.docs = docs;
   state.active = 0;
   analyze();
@@ -123,6 +125,7 @@ async function run() {
 // All documents of one run share a name index and a numbering, like one page in the extension.
 function analyze() {
   const readable = state.docs.filter(d => !d.error);
+  for (const doc of readable) doc.text = sourceText(doc.source, settings);
   const spans = detect(readable.map(d => d.text), settings);
   const numberer = createNumberer();
   readable.forEach((doc, i) => {

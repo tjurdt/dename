@@ -63,6 +63,7 @@ h2{margin:0 0 2px;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(
 .paste-wrap textarea{flex:1;min-height:150px}
 .filelist{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .filelist:empty{display:none}
+.pdf-opt{margin-top:8px}
 .filelist li{display:flex;align-items:center;gap:8px;font-size:12.5px;background:#f7faf9;border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
 .filelist .tag{font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px;background:var(--brand-soft);color:var(--brand-ink)}
 .filelist .fn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -209,6 +210,7 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
         </button>
         <input type="file" id="fileInput" accept="application/pdf,.pdf,text/plain,.txt" multiple hidden>
         <ul class="filelist" id="fileList"></ul>
+        <label class="row pdf-opt" data-settings><input id="pdfJoinLines" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">PDF：把段落中的自動折行接回來<small>關閉則照 PDF 的每一行換行（適合表格、清單）</small></span></label>
       </div>
       <div class="input-block paste-wrap">
         <div class="input-label"><span>直接貼上文字</span><small>可與上傳檔案一起處理</small></div>
@@ -217,7 +219,7 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
     </div>
   </section>
 
-  <div class="settings" id="settings">
+  <div class="settings" id="settings" data-settings>
     <section class="card tone-what">
       <h2>2 · 要遮什麼</h2>
       <div class="rule-grid">
@@ -3064,6 +3066,11 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
         for (const name of givenNames) for (const ch of name) hintChars.add(ch);
         for (const ch of "小大明華美玉淑芬惠玲麗秀英雅婷怡君雯娟芳萍珍珠蓉霞燕梅蘭琴如欣妤詩涵宜蓁品妍子晴詠苡菲雨霏宥承恩碩睿廷冠宇翰家豪志偉建宏文雄武德成金龍水生進財榮國正清福昌忠義信仁智勇俊傑杰凱安平瑞祥柏佑哲學政宗聖毅達宇軒庭鈞均彥彬銘賢維旭昇鴻嘉佩珮盈柔玟婉雪云芸萱慈璇韻潔菁慧愛暐瑋緯皓昱祐宸諺博翔旻晉豐源益坤振興慶勝永松茂盛健育世東孟樂琳瑩璟琦綺珊玥璿瀚勳憲澤潤皞韜靖心思亮晟彤丞奕昊薇婕甯寧沛妘同") hintChars.add(ch);
         const commonWords = new Set("王國 王朝 王道 王府 王牌 王子 王后 王者 王位 王水 林口 林業 林地 林木 林立 林區 林場 林蔭 林間 黃色 黃金 黃疸 黃豆 黃斑 黃體 黃麴 黃昏 黃泉 黃綠 張力 張貼 張數 張開 張望 張羅 張嘴 張數 李子 李樹 許可 許多 許願 許久 曾經 曾有 曾任 曾說 何時 何處 何必 何況 何以 何杰金 周末 周邊 周期 周圍 周全 周轉 周知 周年 周日 周報 高血壓 高血糖 高血脂 高雄 高山 高度 高溫 高興 高中 高齡 高危 高燒 高鐵 高階 高峰 高層 高效 高劑量 高鉀 高鈉 高鈣 高尿酸 江山 江湖 江河 白血球 白血病 白色 白天 白飯 白內障 白蛋白 白袍 白班 白斑 金額 金融 金錢 金屬 金黃 金針 石頭 石化 石油 石膏 石灰 古代 古蹟 古老 古典 連結 連續 連絡 連線 連日 連帶 連同 方形 方法 方式 方向 方才 方便 方案 方面 方針 施打 施行 施用 施政 施壓 施工 施術 胡椒 胡亂 胡說 吳郭魚 陳列 陳述 陳皮 陳年 陳舊 陳設 陳情 陳報 陳明 馬上 馬路 馬達 馬公 馬桶 馬鈴薯 葉片 葉子 葉酸 葉黃素 葉綠素 溫度 溫暖 溫泉 溫和 溫水 温度 温暖 温和 安全 安排 安心 安寧 安裝 安眠 安定 安置 安養 成功 成為 成本 成長 成人 成分 成果 成效 成像 全部 全國 全天 全身 全血 全數 全額 常見 常常 常用 常規 易於 易感 容易 容量 容器 容納 夏天 夏季 湯匙 湯圓 湯藥 毛巾 毛病 毛孔 毛髮 毛細 雷雨 雷射 雷同 楊桃 楊柳 楊梅 謝謝 謝絕 謝意 鄭重 洪水 洪流 洪峰 洪亮 賴床 賴皮 賴帳 徐徐 徐緩 蘇打 蘇醒 莊嚴 莊重 莊園 蕭條 羅列 羅盤 羅馬 簡單 簡易 簡介 簡稱 簡報 簡化 簡訊 簡便 游泳 游標 游離 沈默 沈重 顏色 顏面 顏料 孫子 孫女 田野 田地 童年 童話 姜母鴨 唐氏 巴金森 貝爾氏 嚴重 嚴格 嚴謹 姓名 名字 名稱 病人 患者 男性 女性 病歷 身分證 聯絡人 未知 不詳 無名氏 查詢 查核 門診 住院 出院 其他 正常 家庭 家屬 同意 支持 支援 皮膚 皮下 車輛 車站 目前 明天 明白 都是 電話 時間 資訊 資料 標籤 招募 招募中 海宣部 時間表 時段 時差 時刻 日期 日程 日曆 日誌 日報 訊息 公告 公開 公共 公關 宣傳 海宣 行政 人事 企劃 行銷 研發 客服 總務 招生 招聘 招標 招商 招待 報名 報到 登入 登出 註冊 搜尋 查找 查閱 設定 設置 設施 管理 管道 管理員 管理中 管理者 更新 更新中 新增 編輯 刪除 移除 儲存 儲值 保存 保留 保險 取消 確認 確定 確認中 確認碼 完成 完成率 完成中 完整 尚未 尚有 尚可 進行中 進度 待處理 已完成 已讀 未讀 來源 來自 來信 來電 地址 地點 地圖 地區 地理 名單 名片 類別 分類 分享 下載 上傳 上傳中 下載中 附件 文件 文件夾 文檔 文案 文字 文本 文書 文具 文法 文學 文章 內容 內文 聯絡 連接 連接中 狀態 狀況 狀態碼 權限 權益 權利 權責 權重 印表機 印刷 印章 印象 資格 資源 資料庫 資訊網 資料夾 資訊部 標題 標記 標示 標準 標準化 標點 海報 海外 海岸 海水 海洋 海關 海運 部門 部分 部署 組別 組織 科室 辦公室 姓氏 小組 中心 主頁 首頁 返回 返回值 功能 成員 安裝中 安全性 官網 官方 專區 表單 表格 表示 使用 使用者 使用中 用戶 用途 用法 應用 應用程式 應徵 應徵中 過程 過濾 過期 過去 更多 語言 說明 醫療 醫院 醫師 身份 證號 證件 病房 病床 男 女 性別 年齡 通知 流程 主治 主訴 護理 藥師 檢驗 影像 放射 復健 營養 個管 志工 排程 掛號 批價 領藥 生命徵象 意識 清醒 嗜睡 發燒 疼痛 治療 手術 麻醉 傷口 引流 換藥 出血 感染 嚴重度 嚴重程度 成績 成功率 成本價 返回中 返回鍵 通知中".split(/\s+/).filter(Boolean));
+        const probedWords = (
+          // 求職、自傳、學歷
+          "經歷 經驗 經過 經常 經濟 經營 經費 經由 經理 經手 經典 經年 履歷 簡歷 簡章 簡述 國考 國家 國際 國中 國小 國立 國內 國外 國語 國文 國籍 國民 國防 國健署 國泰 國道 國軍 國術 國寶 國旗 國樂 高級 高手 高考 高普考 高分 高壓 高處 高價 高速 高強度 高品質 高醫 常感 常態 常識 常駐 常務 常年 單位 單純 單車 單身 單獨 單一 單元 單次 單據 團隊 團體 房務 房間 房東 平面 平常 平時 平均 平台 平安 平衡 平日 文史 文化 文創 文青 同理 同理心 同學 同事 同時 同仁 師資 師長 師培 師大 曾獲 英文 日文 華語 臺語 華人 華僑 華文 華南 華北 程式 程度 程序 商業 商品 商管 應屆 應考 申辦 丁級 項目 計畫 計劃 計算 費用 費時 費心 費力 練習 段落 段考 章節 章程 於此 時期 時候 時常 時數 時效 明年 明顯 明確 明亮 明星 康復 包括 包含 包裝 包紮 包容 向來 向上 向下 尤其 卓越 卓見 祝福 祝賀 齊全 齊心 莫名 莫過 冷靜 冷氣 冷凍 冷卻 談話 談判 解決 解釋 解剖 解析 解說 和平 和諧 和睦 盛行 盛大 盛夏 夏日 夏令營 秋天 秋季 甘願 杜絕 余下 余裕 余光 余力 余額 余數 范圍 范例 史料 史實 史學 史詩 左右 左邊 左手 凌晨 焦慮 焦點 富足 甯靜 冉冉 景點 景觀 景色 紀律 紀錄 紀念 日出 日常 雲端 雲朵 花費 花園 花生 花錢 車禍 車程 車票 車上 祖父 祖母 祖先 席位 席次 牛奶 牛肉 牛排 羊肉 羊水 鳳梨 柳橙 柳丁 鮑魚 桂花 桂圓 梅花 甘草 甘油 甘露 葛根 柏油 季節 季度 季刊 雷達 龍頭 龍舟 戴口罩 戴上 賀卡 卜卦 宋體 林務 洪荒 侯門 巴士 谷底 谷歌 經期 經痛 經絡 宮頸 宮縮 竇性 竇房結 梅毒 霍亂 宜蘭 臺北 臺中 臺南 臺東 花蓮 苗栗 南投 雲林 金門 馬祖 蘭嶼 東清 江蘇 湖南 湖北 杭州 鄭州 巴西 宮崎 夏威夷 蘇格蘭 榮總 馬偕 臺大 成大 陽明 東吳 東海 秦朝 唐朝 宋朝 明朝 元朝 周朝 魏晉 宮廷 蔡司 傅立葉 潘朵拉".split(/\s+/).filter(Boolean)
+        );
+        for (const word of probedWords) commonWords.add(word);
         const api = {
           givenNames: [...givenNames],
           strongGiven,
@@ -3723,7 +3730,8 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
     return {
       ...core,
       outputMode: OUTPUT_MODES.includes(value.outputMode) ? value.outputMode : "replace",
-      markDoubt: typeof value.markDoubt === "boolean" ? value.markDoubt : false
+      markDoubt: typeof value.markDoubt === "boolean" ? value.markDoubt : false,
+      pdfJoinLines: typeof value.pdfJoinLines === "boolean" ? value.pdfJoinLines : true
     };
   }
   var NOT_PERSISTED = ["manualNames"];
@@ -3791,6 +3799,88 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
     return Object.entries(CATEGORIES).map(([key, { color }]) => `.cat-${key}{--cat:${color}}`).join("\n");
   }
 
+  // web/src/pdf-text.js
+  function itemsToLines(items) {
+    const lines = [];
+    let line = null;
+    for (const item of items) {
+      if (!item.str) continue;
+      const x = item.transform[4], y = item.transform[5], h = item.height || 0;
+      if (!line || Math.abs(y - line.y) > Math.max(2, 0.4 * Math.max(h, line.height))) {
+        line = { text: "", left: x, right: x, y, height: 0 };
+        lines.push(line);
+      }
+      line.text += item.str;
+      line.left = Math.min(line.left, x);
+      line.right = Math.max(line.right, x + (item.width || 0));
+      line.height = Math.max(line.height, h);
+    }
+    return lines.filter((l) => l.text.trim());
+  }
+  var WIDE = /[\p{Script=Han}　-〿＀-￯⺀-⿟]/u;
+  function lowerQuartile(values) {
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.floor((sorted.length - 1) / 4)];
+  }
+  function textBlockRight(lines, tolerance) {
+    const rights = lines.map((l) => l.right).sort((a, b) => b - a);
+    for (const r of rights) if (rights.filter((x) => Math.abs(x - r) <= tolerance).length >= 2) return r;
+    return rights[0];
+  }
+  function firstTokenWouldFit(prev, next, rightEdge, height) {
+    const text = next.text.trimStart();
+    const advance = (next.right - next.left) / Math.max(1, Array.from(next.text).length);
+    const token = text.match(/^[A-Za-z0-9@._%+\-]+/)?.[0] || Array.from(text)[0] || "";
+    const latinPair = /[A-Za-z0-9]$/.test(prev.text.trimEnd()) && /^[A-Za-z0-9]/.test(text);
+    const needed = Array.from(token).length * advance + (latinPair ? advance : 0);
+    return prev.right + needed < rightEdge - 0.5 * height;
+  }
+  function linesToText(lines, { joinWraps = true } = {}) {
+    if (!joinWraps || lines.length < 2) return lines.map((l) => l.text).join("\n");
+    const height = Math.max(1, ...lines.map((l) => l.height));
+    const rightEdge = textBlockRight(lines, height);
+    const leftEdge = Math.min(...lines.map((l) => l.left));
+    const gaps = lines.slice(1).map((l, i) => lines[i].y - l.y).filter((g) => g > 0);
+    const lineGap = gaps.length ? lowerQuartile(gaps) : height * 1.2;
+    let text = lines[0].text;
+    for (let i = 1; i < lines.length; i++) {
+      const prev = lines[i - 1], next = lines[i];
+      const gap = prev.y - next.y;
+      const paragraphGap = gap <= 0 || gap > lineGap * 1.4;
+      const indented = next.left > leftEdge + 0.8 * height;
+      if (!paragraphGap && !indented && !firstTokenWouldFit(prev, next, rightEdge, height)) {
+        const a = prev.text.trimEnd(), b = next.text.trimStart();
+        const wide = WIDE.test(a.slice(-1)) || WIDE.test(b[0]);
+        text = text.trimEnd() + (wide ? "" : " ") + b;
+      } else {
+        text += (paragraphGap ? "\n\n" : "\n") + next.text;
+      }
+    }
+    return text;
+  }
+  function pagesToText(pages, options) {
+    return pages.map((lines) => linesToText(lines, options)).join("\n\n");
+  }
+  var RADICAL_SUPPLEMENT = {
+    "⺝": "月",
+    "⺟": "母",
+    "⺠": "民",
+    "⻄": "西",
+    "⻆": "角",
+    "⻑": "長",
+    "⻘": "青",
+    "⻝": "食",
+    "⻤": "鬼",
+    "⻩": "黄",
+    "⻫": "斉",
+    "⻭": "歯",
+    "⻯": "竜",
+    "⻳": "亀"
+  };
+  function normalizeCjk(text) {
+    return text.replace(/[⼀-⿟豈-﫿]/g, (c) => c.normalize("NFKC")).replace(/[⺀-⻿]/g, (c) => RADICAL_SUPPLEMENT[c] || c);
+  }
+
   // web/src/read-file.js
   function fileKind(file) {
     if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) return "pdf";
@@ -3807,42 +3897,28 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
     }
     return lib;
   }
-  async function extractPdfText(file) {
+  async function extractPdfPages(file) {
     const pdf = await pdfjs().getDocument({ data: await file.arrayBuffer() }).promise;
-    let full = "";
+    const pages = [];
     for (let p = 1; p <= pdf.numPages; p++) {
       const content = await (await pdf.getPage(p)).getTextContent();
-      let lastY = null, line = "";
-      const lines = [];
-      for (const item of content.items) {
-        const y = item.transform[5];
-        if (lastY !== null && Math.abs(y - lastY) > 2) {
-          lines.push(line);
-          line = "";
-        }
-        line += item.str;
-        if (item.hasEOL) {
-          lines.push(line);
-          line = "";
-          lastY = null;
-        } else lastY = y;
-      }
-      if (line) lines.push(line);
-      full += lines.join("\n");
-      if (p < pdf.numPages) full += "\n\n";
+      pages.push(itemsToLines(content.items));
     }
-    return full;
+    return pages;
   }
-  async function readFileText(file) {
-    const kind = fileKind(file);
+  async function readFileSource(file) {
     try {
-      if (kind === "txt") return { text: await file.text() };
-      const text = await extractPdfText(file);
-      if (!text.trim()) return { error: "此 PDF 沒有可擷取的文字層（可能是掃描影像，需先 OCR）。" };
-      return { text };
+      if (fileKind(file) === "txt") return { text: await file.text() };
+      const pages = await extractPdfPages(file);
+      if (!pages.some((lines) => lines.length)) return { error: "此 PDF 沒有可擷取的文字層（可能是掃描影像，需先 OCR）。" };
+      return { pages };
     } catch {
       return { error: "讀取失敗（檔案可能損毀或受密碼保護）。" };
     }
+  }
+  function sourceText(source, { pdfJoinLines = true } = {}) {
+    const raw = source.pages ? pagesToText(source.pages, { joinWraps: pdfJoinLines }) : source.text;
+    return normalizeCjk(raw);
   }
 
   // web/src/main.js
@@ -3852,12 +3928,12 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
     files: [],
     // File objects waiting to be processed
     docs: [],
-    // [{name, text, error, spans, segments, output, tally}] from the last run
+    // [{name, source, error, text, spans, segments, output, tally}] from the last run
     active: 0,
     view: "redacted"
     // 'redacted' | 'highlight'
   };
-  var textCache = /* @__PURE__ */ new WeakMap();
+  var sourceCache = /* @__PURE__ */ new WeakMap();
   var CHECKS = {
     ruleNames: ["rules", "names"],
     ruleMrn: ["rules", "medicalRecordNumber"],
@@ -3868,7 +3944,8 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
     givenNames: ["givenNames"],
     mrnKeepDefault: ["mrnKeepDefault"],
     mrnExcludeDates: ["mrnExcludeDates"],
-    markDoubt: ["markDoubt"]
+    markDoubt: ["markDoubt"],
+    pdfJoinLines: ["pdfJoinLines"]
   };
   var SELECTS = ["surnameLimit", "dateMode", "mrnMode"];
   var LISTS = ["manualNames", "keepWords"];
@@ -3895,7 +3972,7 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
     next.outputMode = document.querySelector("input[name=outputMode]:checked")?.value;
     return normalizeWeb(next);
   }
-  $("settings").addEventListener("change", () => {
+  function onSettingsChange() {
     settings = readSettingsForm();
     saveSettings(settings);
     paintSettings();
@@ -3903,7 +3980,8 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
       analyze();
       renderResults();
     }
-  });
+  }
+  for (const el of document.querySelectorAll("[data-settings]")) el.addEventListener("change", onSettingsChange);
   var drop = $("drop");
   var fileInput = $("fileInput");
   drop.addEventListener("click", () => fileInput.click());
@@ -3950,11 +4028,12 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
     btn.innerHTML = '<span class="spinner"></span>處理中…';
     const docs = [];
     for (const file of state.files) {
-      if (!textCache.has(file)) textCache.set(file, await readFileText(file));
-      docs.push({ name: file.name, ...textCache.get(file) });
+      if (!sourceCache.has(file)) sourceCache.set(file, await readFileSource(file));
+      const source = sourceCache.get(file);
+      docs.push({ name: file.name, source, error: source.error });
     }
     const pasted = $("pasteBox").value;
-    if (pasted.trim()) docs.push({ name: "貼上文字", text: pasted });
+    if (pasted.trim()) docs.push({ name: "貼上文字", source: { text: pasted } });
     state.docs = docs;
     state.active = 0;
     analyze();
@@ -3963,6 +4042,7 @@ mark.doubt{background:color-mix(in srgb,#c99a00 18%,transparent);box-shadow:none
   }
   function analyze() {
     const readable = state.docs.filter((d) => !d.error);
+    for (const doc of readable) doc.text = sourceText(doc.source, settings);
     const spans = detect(readable.map((d) => d.text), settings);
     const numberer = createNumberer();
     readable.forEach((doc, i) => {
