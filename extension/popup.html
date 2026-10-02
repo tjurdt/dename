@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OOO 敏感資料遮罩</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand"><span class="dots" aria-hidden="true"></span></div>
+    <div class="brand-text">
+      <h1>敏感資料遮罩</h1>
+      <p id="siteName">讀取中…</p>
+    </div>
+    <label class="switch-wrap" title="全域開關：關閉後在所有網站停止運作">
+      <input id="globalEnabled" type="checkbox">
+      <span class="switch" aria-hidden="true"></span>
+    </label>
+  </header>
+
+  <p id="status" class="status">尚未取得狀態</p>
+
+  <section class="card tone-site">
+    <label class="row head">
+      <input id="siteEnabled" type="checkbox">
+      <span class="box" aria-hidden="true"></span>
+      <span class="row-text"><b>在這個網站啟用</b><small id="siteHint">只影響目前網站</small></span>
+    </label>
+  </section>
+
+  <!-- 保護方式：兩個互相獨立的開關 -->
+  <section class="card tone-screen">
+    <label class="row head">
+      <input id="maskScreen" type="checkbox">
+      <span class="box" aria-hidden="true"></span>
+      <span class="row-text"><b>螢幕遮罩</b><small>把網頁上看得到的內容蓋掉</small></span>
+    </label>
+    <div class="sub" id="screenSub">
+      <label class="row"><input id="maskInputs" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">也遮住輸入框內的文字<small>關閉後自己打字不受影響</small></span></label>
+    </div>
+  </section>
+
+  <section class="card tone-clip">
+    <label class="row head">
+      <input id="maskClipboard" type="checkbox">
+      <span class="box" aria-hidden="true"></span>
+      <span class="row-text"><b>複製貼上遮罩</b><small>剪貼簿內容改成遮罩後的純文字</small></span>
+    </label>
+    <div class="sub" id="clipSub">
+      <label class="row"><input id="maskCopy" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">複製時遮罩</span></label>
+      <label class="row"><input id="maskPaste" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">貼上時遮罩<small>PDF 內容靠這個</small></span></label>
+    </div>
+  </section>
+
+  <!-- 遮什麼 -->
+  <section class="card tone-what">
+    <h2>要遮什麼</h2>
+    <label class="row"><input id="ruleNames" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">姓名</span></label>
+    <label class="row"><input id="ruleMrn" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">病歷號</span></label>
+    <label class="row"><input id="ruleBirthDate" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">出生日期</span></label>
+    <label class="row"><input id="ruleNationalId" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">身分證號</span></label>
+    <label class="row"><input id="ruleEmail" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">電子郵件</span></label>
+    <label class="row"><input id="rulePhone" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">電話號碼</span></label>
+
+    <details>
+      <summary>姓名細項</summary>
+      <label class="row"><input id="givenNames" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">同頁出現全名後，只提名字也遮</span></label>
+      <label class="field" for="surnameLimit">姓氏範圍</label>
+      <select id="surnameLimit">
+        <option value="500">官方前 500 大姓（預設）</option>
+        <option value="100">官方前 100 大姓</option>
+      </select>
+      <p class="hint">姓名判斷使用內政部姓氏排名與公開的常見名字統計，加上欄位標籤與前後文。仍會有誤遮與漏遮。</p>
+    </details>
+
+    <details>
+      <summary>日期範圍</summary>
+      <label class="field" for="dateMode">要遮哪些日期</label>
+      <select id="dateMode">
+        <option value="unlabelled">生日欄位＋沒有標明用途的日期（預設）</option>
+        <option value="labelled">只遮生日欄位附近的日期</option>
+        <option value="all">所有近 115 年的日期</option>
+      </select>
+      <p class="hint">支援 1986/03/02、1986-03-02、1986.03.02、19860302、民國75年3月2日、75.03.02、1150302、03/02/1986 等寫法，西元與民國、有無分隔、不同順序都認，只認最近 115 年內的真實日期，未來日期一律排除。<br>預設會遮住沒有標籤的日期（出生日期常常就是這樣放著），但保留標明用途的日期，例如檢驗日、入院日、手術日、下次回診。<br><b>「所有日期」會把這些一併蓋掉</b>，只建議螢幕分享時臨時開啟。</p>
+    </details>
+
+    <details>
+      <summary>病歷號格式</summary>
+      <label class="field" for="mrnMode">格式</label>
+      <select id="mrnMode">
+        <option value="all">預設格式（6–8 碼）</option>
+        <option value="checked">只遮 8 碼且檢查碼相符</option>
+        <option value="custom">自訂格式</option>
+      </select>
+      <div id="mrnCustom" class="hidden">
+        <textarea id="mrnPatterns" rows="3" spellcheck="false" placeholder="一行一種格式&#10;# 數字　A 英文字母　* 兩者皆可&#10;例如：A####### 或 ##-######"></textarea>
+        <label class="row"><input id="mrnKeepDefault" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">同時保留預設格式</span></label>
+      </div>
+      <label class="row"><input id="mrnExcludeDates" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">不把近期日期當成病歷號<small>過去半年至未來一個月</small></span></label>
+      <p class="hint" id="mrnHint">預設格式為 6 至 8 碼純數字；8 碼須通過檢查碼。日期排除支援 20260707、1150707、260707 三種寫法，只認真實存在的日期。6–7 碼無檢查碼，仍會連帶遮住同長度的驗證碼或單號。</p>
+    </details>
+  </section>
+
+  <!-- 例外清單：一個選單切換兩份名單 -->
+  <section class="card tone-list">
+    <h2>例外清單</h2>
+    <select id="listKind">
+      <option value="names">一定要遮的姓名（只存這台電腦）</option>
+      <option value="keep">不要遮的詞（跨裝置同步）</option>
+    </select>
+    <textarea id="listInput" rows="3" spellcheck="false"></textarea>
+    <div class="btns">
+      <button id="listApply" type="button" class="btn solid">套用</button>
+      <button id="listClear" type="button" class="btn tonal">清除</button>
+    </div>
+    <p class="hint" id="listHint"></p>
+  </section>
+
+  <details class="card tone-adv">
+    <summary>進階</summary>
+    <label class="field" for="replacement">替換文字</label>
+    <input id="replacement" maxlength="12" value="OOO" autocomplete="off">
+    <label class="row"><input id="showCopyToast" type="checkbox"><span class="box" aria-hidden="true"></span><span class="row-text">動作後顯示提示</span></label>
+    <button id="rescan" type="button" class="btn tonal">重新掃描這一頁</button>
+    <p class="hint" id="syncNote"></p>
+    <p class="hint">網頁內容與剪貼簿全部在本機處理，不會上傳。遮罩不等於已完成去識別化，對外提供前請人工檢查。</p>
+  </details>
+</main>
+<script src="settings.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

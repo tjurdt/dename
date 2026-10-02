@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' blob:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文件去識別化工具 · 姓名 / 身分證 / 病歷號</title>
+<style>
+<!--@inline:./styles.css--></style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="brand">
+      <div class="glyph" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div>
+        <h1>文件去識別化工具</h1>
+        <p>PDF / TXT 上傳 → 遮蔽姓名・身分證・病歷號 → 輸出 TXT</p>
+      </div>
+    </div>
+    <span class="localbadge" title="所有處理都在您的瀏覽器內完成">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      全程本地處理 · 檔案不會上傳
+    </span>
+  </header>
+
+  <div class="grid">
+    <div class="sidecol">
+      <section class="panel input-panel">
+        <div class="hd"><h2>1 · 輸入內容</h2><span class="sub">PDF / TXT / 直接貼上文字</span></div>
+        <div class="bd input-layout">
+          <div class="input-block">
+            <div class="input-label"><span>上傳檔案</span><span class="hint">可一次選擇多檔</span></div>
+            <div class="drop" id="drop">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+              <div class="big">拖曳 PDF 或 TXT 到這裡</div>
+              <div class="small">或點擊選擇檔案 · PDF 需有文字層</div>
+            </div>
+            <input type="file" id="fileInput" accept="application/pdf,.pdf,text/plain,.txt" multiple class="hidden">
+            <ul class="filelist" id="fileList"></ul>
+          </div>
+          <div class="input-block paste-wrap">
+            <div class="input-label"><span>直接貼上文字</span><span class="hint">可與上傳檔案同時使用</span></div>
+            <textarea id="pasteBox" placeholder="把要去識別化的文字貼在這裡…"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel settings-panel">
+        <div class="hd"><h2>2 · 去識別化設定</h2><span class="sub">預設值已適合一般使用，可依需要微調</span></div>
+        <div class="bd">
+          <div class="settings-intro">
+            <span>主要規則並排呈現；進階選項收在各自相關項目內，不再形成狹長設定欄。</span>
+          </div>
+          <div class="settings-grid">
+            <div class="setting-card">
+              <div class="setting-title">姓名</div>
+              <div class="rulegroup">
+                <div class="rule">
+                  <input type="checkbox" id="rule_name" checked>
+                  <span class="swatch" style="background:#d6336c"></span>
+                  <label for="rule_name">中文姓名<span class="ex">多訊號判定：姓氏＋名字用字＋上下文</span></label>
+                </div>
+                <div class="subopt">
+                  <div class="mininote">姓名靈敏度（越高抓越多、誤判也越多）</div>
+                  <div class="sens" id="sens">
+                    <button data-th="3" class="on">高</button>
+                    <button data-th="4">中</button>
+                    <button data-th="6">低</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <div class="setting-title">身分證</div>
+              <div class="rulegroup">
+                <div class="rule">
+                  <input type="checkbox" id="rule_twid" checked>
+                  <span class="swatch" style="background:#c92a2a"></span>
+                  <label for="rule_twid">身分證字號<span class="ex">A123456789</span></label>
+                </div>
+                <div class="subopt">
+                  <div class="rule" style="padding:4px 0">
+                    <input type="checkbox" id="optChecksum" checked>
+                    <label for="optChecksum" style="font-size:12.5px">僅遮蔽通過檢查碼者<span class="ex">關閉＝所有符合格式者都遮（更保守）</span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <div class="setting-title">病歷與日期</div>
+              <div class="rulegroup">
+                <div class="rule">
+                  <input type="checkbox" id="rule_chart" checked>
+                  <span class="swatch" style="background:#0e8a8a"></span>
+                  <label for="rule_chart">病歷號（需關鍵字）<span class="ex">病歷號 / 住院號 / 門診號：1234567</span></label>
+                </div>
+                <div class="rule">
+                  <input type="checkbox" id="rule_date" checked>
+                  <span class="swatch" style="background:#546274"></span>
+                  <label for="rule_date">日期（含出生日期）<span class="ex">20260707・1957-01-16・110年5月3日</span></label>
+                </div>
+                <div class="subopt">
+                  <div class="rule" style="padding:4px 0">
+                    <input type="checkbox" id="optKeepRecent" checked>
+                    <label for="optKeepRecent" style="font-size:12.5px">保留一年內的日期<span class="ex">可能是入院日或嬰兒生日（回推月數用）</span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <div class="setting-title">無標籤數字</div>
+              <div class="rulegroup">
+                <div class="rule">
+                  <input type="checkbox" id="rule_longnum" checked>
+                  <span class="swatch" style="background:#0a7cbf"></span>
+                  <label for="rule_longnum">無關鍵字數字串<span class="ex">結構化清單裡沒有標籤的病歷號等</span></label>
+                </div>
+                <div class="subopt">
+                  <div class="mininote">數字串最少位數（越小抓越多、誤判越多）</div>
+                  <div class="sens" id="minDigits">
+                    <button data-n="6" class="on">6 碼</button>
+                    <button data-n="7">7 碼</button>
+                    <button data-n="8">8 碼</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <div class="setting-title">複核輔助</div>
+              <div class="rulegroup">
+                <div class="rule">
+                  <input type="checkbox" id="optMarkDoubt">
+                  <label for="optMarkDoubt">標註有疑義的項目<span class="ex">低信心判定標為 [姓名?]，並在「標示原文」以虛線標出</span></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <div class="setting-title">取代方式</div>
+              <div class="modes">
+                <div class="opt on" data-mode="label"><div class="t">類別標籤</div><div class="d">全換成 [姓名]</div></div>
+                <div class="opt" data-mode="number"><div class="t">編號代號</div><div class="d">同值一致 [姓名_01]</div></div>
+              </div>
+              <p class="mininote">編號模式讓同一個值對到固定代號，保留關聯性，適合後續分析。</p>
+            </div>
+
+            <div class="setting-card full custom-card">
+              <div class="setting-title">自訂詞彙 · 補漏用</div>
+              <p class="mininote" style="margin:0 0 8px">姓名判定不可能百分百，把確定要遮但可能漏掉的字串放這裡，一行一個或逗號分隔。</p>
+              <textarea id="customTerms" placeholder="陳大文&#10;林○○&#10;某某診所"></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="runbar">
+        <div class="runbar-copy"><strong>設定完成後直接執行</strong>處理全程留在這個瀏覽器，不會把檔案送到外部。</div>
+        <button class="btn btn-primary" id="runBtn" disabled><span id="runLabel">請先選擇檔案</span></button>
+      </div>
+    </div>
+
+    <section class="panel" id="resultPanel">
+      <div class="empty" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg>
+        <div class="big">尚未產生結果</div>
+        <div>加入檔案或貼上文字、確認設定後，點「開始去識別化」。</div>
+      </div>
+      <div id="resultBody" class="hidden">
+        <div class="tally" id="tally"></div>
+        <div class="filetab" id="fileTabs"></div>
+        <div class="toolbar">
+          <div class="seg">
+            <button id="viewRedacted" class="on">去識別化後</button>
+            <button id="viewHighlight">標示原文</button>
+          </div>
+          <div class="seg">
+            <button id="wrapOn" class="on">自動換行</button>
+            <button id="wrapOff">不換行</button>
+          </div>
+          <div class="grow"></div>
+          <button class="btn btn-ghost" id="selAll">全選</button>
+          <button class="btn btn-ghost" id="copyBtn">複製結果</button>
+          <button class="btn btn-ghost" id="dlOne">下載此檔 .txt</button>
+          <button class="btn btn-ghost" id="dlAll">合併下載</button>
+        </div>
+        <div>
+          <pre class="doc" id="docView"></pre>
+          <div class="trunc hidden" id="truncNote"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot">
+    <div class="note">
+      <strong>使用限制</strong>：中文姓名以規則＋字典判定，<strong>必有漏抓與誤判</strong>（冷僻名字用字、複姓、外國譯名易漏；某些姓氏＋常用字可能誤遮）。身分證、病歷號亦非萬無一失。用於實際臨床／研究資料時，本工具僅能<strong>降低風險</strong>，請務必以「標示原文」檢視人工複核後再採用輸出結果。
+    </div>
+    <p style="margin:12px 0 0">全部在瀏覽器端執行，無後端、無網路傳輸。<code>pdf.js</code> 已內嵌於本檔（不從 CDN 載入），並以 <code>Content-Security-Policy</code> 鎖死所有對外連線——本頁在結構上無法把資料送出，可存檔後<strong>斷網離線</strong>使用。掃描影像 PDF（無文字層）無法擷取。</p>
+  </div>
+</div>
+
+<!-- pdf.js 3.11.174 (legacy UMD) inlined locally; no CDN -->
+<script>
+<!--@inline:../vendor/pdfjs-3.11.174/pdf.js--></script>
+<script id="pdfjsWorker" type="javascript/worker">
+<!--@inline:../vendor/pdfjs-3.11.174/pdf.worker.js--></script>
+<script>
+<!--@inline:./app.js--></script>
+</body>
+</html>
